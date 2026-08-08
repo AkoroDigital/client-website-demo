@@ -35,10 +35,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ---------- nav active state ----------
   const currentPage = window.location.pathname.split('/').pop() || 'index.html';
-  document.querySelectorAll('.main-nav a, .footer-nav a').forEach((link) => {
+  document.querySelectorAll('.main-nav a, .footer-nav a, .mobile-nav a').forEach((link) => {
     const linkPage = (link.getAttribute('href') || '').split('#')[0] || 'index.html';
     if (linkPage === currentPage) link.classList.add('active');
   });
+
+  // ---------- hamburger menu ----------
+  const menuToggle = document.querySelector('.menu-toggle');
+  const mobileNav = document.querySelector('.mobile-nav');
+  if (menuToggle && mobileNav) {
+    const setMenu = (open) => {
+      menuToggle.classList.toggle('is-open', open);
+      menuToggle.setAttribute('aria-expanded', String(open));
+      mobileNav.classList.toggle('open', open);
+      mobileNav.setAttribute('aria-hidden', String(!open));
+      document.body.classList.toggle('menu-open', open);
+    };
+    menuToggle.addEventListener('click', () => {
+      setMenu(!mobileNav.classList.contains('open'));
+    });
+    mobileNav.querySelectorAll('a').forEach((link) => {
+      link.addEventListener('click', () => setMenu(false));
+    });
+    window.addEventListener('resize', () => {
+      if (window.innerWidth > 760) setMenu(false);
+    });
+  }
 
   // ---------- header settles into a solid bar past the intro band ----------
   const header = document.querySelector('.site-header');
