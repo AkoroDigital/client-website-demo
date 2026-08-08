@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Design Directions — Water Restoration</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Source+Sans+3:wght@400;600&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;700&family=Work+Sans:wght@400;600&family=IBM+Plex+Mono:wght@400;500&family=Oswald:wght@500;700&family=Karla:wght@400;600&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html { background: oklch(20% 0.01 260); }
+  body {
+    margin: 0;
+    background: oklch(20% 0.01 260);
+    font-family: 'Source Sans 3', sans-serif;
+    color: oklch(92% 0.01 260);
+    padding: 2.5rem 1.5rem 5rem;
+  }
+  .intro {
+    max-width: 760px;
+    margin: 0 auto 3rem;
+    text-align: center;
+  }
+  .intro h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin: 0 0 0.5rem;
+    color: oklch(97% 0.005 260);
+  }
+  .intro p {
+    color: oklch(72% 0.015 260);
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin: 0;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+  @media (max-width: 1000px) {
+    .grid { grid-template-columns: 1fr; }
+  }
+  .card {
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid oklch(35% 0.02 260);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+  .badge {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 0.35rem 0.7rem;
+    border-radius: 999px;
+    font-weight: 600;
+    z-index: 5;
+  }
+  .card-head {
+    padding: 2.5rem 1.75rem 2rem;
+  }
+  .card-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    opacity: 0.65;
+    margin-bottom: 0.75rem;
+  }
+  .thesis {
+    font-size: 1.5rem;
+    line-height: 1.25;
+    margin: 0 0 1rem;
+  }
+  .sample {
+    font-size: 0.95rem;
+    line-height: 1.5;
+    max-width: 34ch;
+    opacity: 0.85;
+  }
+  .swatches {
+    display: flex;
+    flex-wrap: wrap;
+  }
+  .swatch {
+    flex: 1 1 auto;
+    min-width: 90px;
+    padding: 1rem 0.85rem 0.7rem;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .swatch-name {
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    display: block;
+    margin-bottom: 0.35rem;
+    opacity: 0.85;
+  }
+  .swatch-hex {
+    font-size: 0.62rem;
+    opacity: 0.6;
+    display: block;
+  }
+  .card-body {
+    padding: 1.75rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+  .fonts-block .font-row {
+    margin-bottom: 0.9rem;
+  }
+  .font-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    opacity: 0.6;
+    display: block;
+    margin-bottom: 0.25rem;
+  }
+  .why {
+    font-size: 0.88rem;
+    line-height: 1.5;
+    padding-top: 1rem;
+    border-top: 1px solid;
+    opacity: 0.9;
+  }
+  .cta {
+    display: inline-block;
+    margin-top: 0.25rem;
+    padding: 0.6rem 1.2rem;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    width: fit-content;
+  }
+  .prompt {
+    max-width: 760px;
+    margin: 3rem auto 0;
+    text-align: center;
+    font-size: 0.95rem;
+    color: oklch(75% 0.015 260);
+  }
+  .prompt strong { color: oklch(97% 0.005 260); }
+
+  /* ---------- Direction 1: Storm Response ---------- */
+  #d1 {
+    background: oklch(18% 0.03 250);
+    color: oklch(94% 0.01 250);
+  }
+  #d1 .badge { background: oklch(75% 0.16 70); color: oklch(20% 0.03 70); }
+  #d1 .card-label { color: oklch(75% 0.16 70); opacity: 1; }
+  #d1 .thesis, #d1 .card-head h2 { font-family: 'Archivo Black', sans-serif; text-transform: uppercase; letter-spacing: -0.01em; }
+  #d1 .sample { font-family: 'Source Sans 3', sans-serif; color: oklch(80% 0.015 250); }
+  #d1 .swatches { border-top: 1px solid oklch(30% 0.03 250); border-bottom: 1px solid oklch(30% 0.03 250); }
+  #d1 .sw-bg { background: oklch(18% 0.03 250); color: oklch(85% 0.01 250); }
+  #d1 .sw-surface { background: oklch(23% 0.035 250); color: oklch(85% 0.01 250); }
+  #d1 .sw-ink { background: oklch(94% 0.01 250); color: oklch(20% 0.02 250); }
+  #d1 .sw-muted { background: oklch(45% 0.025 250); color: oklch(90% 0.01 250); }
+  #d1 .sw-accent { background: oklch(75% 0.16 70); color: oklch(20% 0.03 70); }
+  #d1 .sw-line { background: oklch(30% 0.03 250); color: oklch(85% 0.01 250); }
+  #d1 .why { border-color: oklch(30% 0.03 250); color: oklch(78% 0.015 250); }
+  #d1 .fonts-block .font-tag { color: oklch(75% 0.16 70); opacity: 1; }
+  #d1 .font-display { font-family: 'Archivo Black', sans-serif; font-size: 1.3rem; text-transform: uppercase; }
+  #d1 .font-body { font-family: 'Source Sans 3', sans-serif; font-size: 1rem; }
+  #d1 .font-utility { font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; }
+  #d1 .cta { background: oklch(75% 0.16 70); color: oklch(20% 0.03 70); }
+
+  /* ---------- Direction 2: Dry & Certified ---------- */
+  #d2 {
+    background: oklch(96% 0.015 200);
+    color: oklch(22% 0.03 220);
+  }
+  #d2 .badge { background: oklch(55% 0.13 200); color: oklch(98% 0.008 200); }
+  #d2 .card-label { color: oklch(55% 0.13 200); opacity: 1; }
+  #d2 .thesis, #d2 .card-head h2 { font-family: 'Space Grotesk', sans-serif; font-weight: 700; letter-spacing: -0.01em; }
+  #d2 .sample { font-family: 'Work Sans', sans-serif; color: oklch(40% 0.025 220); }
+  #d2 .swatches { border-top: 1px solid oklch(85% 0.015 200); border-bottom: 1px solid oklch(85% 0.015 200); }
+  #d2 .sw-bg { background: oklch(96% 0.015 200); color: oklch(30% 0.02 200); border: 1px solid oklch(88% 0.012 200); }
+  #d2 .sw-surface { background: oklch(99% 0.008 200); color: oklch(30% 0.02 200); border: 1px solid oklch(88% 0.012 200); }
+  #d2 .sw-ink { background: oklch(22% 0.03 220); color: oklch(95% 0.01 220); }
+  #d2 .sw-muted { background: oklch(65% 0.02 210); color: oklch(20% 0.02 210); }
+  #d2 .sw-accent { background: oklch(55% 0.13 200); color: oklch(98% 0.008 200); }
+  #d2 .sw-line { background: oklch(85% 0.015 200); color: oklch(25% 0.02 200); }
+  #d2 .why { border-color: oklch(85% 0.015 200); color: oklch(38% 0.025 220); }
+  #d2 .fonts-block .font-tag { color: oklch(55% 0.13 200); opacity: 1; }
+  #d2 .font-display { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 1.3rem; }
+  #d2 .font-body { font-family: 'Work Sans', sans-serif; font-size: 1rem; }
+  #d2 .font-utility { font-family: 'IBM Plex Mono', monospace; font-size: 0.85rem; }
+  #d2 .cta { background: oklch(55% 0.13 200); color: oklch(98% 0.008 200); }
+
+  /* ---------- Direction 3: Structural Trust ---------- */
+  #d3 {
+    background: oklch(90% 0.02 60);
+    color: oklch(24% 0.02 50);
+  }
+  #d3 .badge { background: oklch(62% 0.19 40); color: oklch(98% 0.01 40); }
+  #d3 .card-label { color: oklch(45% 0.15 40); opacity: 1; }
+  #d3 .thesis, #d3 .card-head h2 { font-family: 'Oswald', sans-serif; font-weight: 600; text-transform: uppercase; letter-spacing: 0.01em; }
+  #d3 .sample { font-family: 'Karla', sans-serif; color: oklch(38% 0.025 50); }
+  #d3 .swatches { border-top: 1px solid oklch(78% 0.02 55); border-bottom: 1px solid oklch(78% 0.02 55); }
+  #d3 .sw-bg { background: oklch(90% 0.02 60); color: oklch(30% 0.02 55); border: 1px solid oklch(80% 0.02 55); }
+  #d3 .sw-surface { background: oklch(95% 0.015 60); color: oklch(30% 0.02 55); border: 1px solid oklch(80% 0.02 55); }
+  #d3 .sw-ink { background: oklch(24% 0.02 50); color: oklch(95% 0.012 50); }
+  #d3 .sw-muted { background: oklch(58% 0.02 50); color: oklch(95% 0.01 50); }
+  #d3 .sw-accent { background: oklch(62% 0.19 40); color: oklch(98% 0.01 40); }
+  #d3 .sw-line { background: oklch(78% 0.02 55); color: oklch(28% 0.02 55); }
+  #d3 .why { border-color: oklch(78% 0.02 55); color: oklch(36% 0.025 50); }
+  #d3 .fonts-block .font-tag { color: oklch(50% 0.17 40); opacity: 1; }
+  #d3 .font-display { font-family: 'Oswald', sans-serif; font-weight: 600; text-transform: uppercase; font-size: 1.3rem; }
+  #d3 .font-body { font-family: 'Karla', sans-serif; font-size: 1rem; }
+  #d3 .font-utility { font-family: 'Roboto Mono', monospace; font-size: 0.85rem; }
+  #d3 .cta { background: oklch(62% 0.19 40); color: oklch(98% 0.01 40); }
+</style>
+</head>
+<body>
+
+  <div class="intro">
+    <h1>Water Restoration — Three Directions</h1>
+    <p>Thesis: "When water hits, we show up fast — and make it right." Reply with 1, 2, or 3 — or say nothing and I'll go with the recommended one.</p>
+  </div>
+
+  <div class="grid">
+
+    <!-- Direction 1: Storm Response -->
+    <section class="card" id="d1">
+      <span class="badge">Recommended</span>
+      <div class="card-head">
+        <div class="card-label">Direction 1 — Storm Response</div>
+        <h2 class="thesis">When water hits, we show up fast — and make it right.</h2>
+        <p class="sample">Licensed technicians. Documented process. Dried and restored — no shortcuts.</p>
+      </div>
+      <div class="swatches">
+        <div class="swatch sw-bg"><span class="swatch-name">BG</span><span class="swatch-hex">oklch(18% .03 250)</span></div>
+        <div class="swatch sw-surface"><span class="swatch-name">Surface</span><span class="swatch-hex">oklch(23% .035 250)</span></div>
+        <div class="swatch sw-ink"><span class="swatch-name">Ink</span><span class="swatch-hex">oklch(94% .01 250)</span></div>
+        <div class="swatch sw-muted"><span class="swatch-name">Muted</span><span class="swatch-hex">oklch(45% .025 250)</span></div>
+        <div class="swatch sw-accent"><span class="swatch-name">Accent</span><span class="swatch-hex">oklch(75% .16 70)</span></div>
+        <div class="swatch sw-line"><span class="swatch-name">Line</span><span class="swatch-hex">oklch(30% .03 250)</span></div>
+      </div>
+      <div class="card-body">
+        <div class="fonts-block">
+          <div class="font-row">
+            <span class="font-tag">Display — Archivo Black</span>
+            <div class="font-display">MAKE IT RIGHT</div>
+          </div>
+          <div class="font-row">
+            <span class="font-tag">Body — Source Sans 3</span>
+            <div class="font-body">We show up fast and treat your home like the job that matters most today.</div>
+          </div>
+          <div class="font-row">
+            <span class="font-tag">Utility — JetBrains Mono</span>
+            <div class="font-utility">24/7 · CALL (555) 010-2030</div>
+          </div>
+        </div>
+        <a class="cta">Call Now</a>
+        <p class="why">Deep navy-slate with a single warning-amber accent — the color of a truck light at 2am. It reads urgent and capable at once, which matches how people actually arrive at a water damage site: in a hurry, needing someone who's clearly done this before.</p>
+      </div>
+    </section>
+
+    <!-- Direction 2: Dry & Certified -->
+    <section class="card" id="d2">
+      <div class="card-head">
+        <div class="card-label">Direction 2 — Dry &amp; Certified</div>
+        <h2 class="thesis">When water hits, we show up fast — and make it right.</h2>
+        <p class="sample">Licensed technicians. Documented process. Dried and restored — no shortcuts.</p>
+      </div>
+      <div class="swatches">
+        <div class="swatch sw-bg"><span class="swatch-name">BG</span><span class="swatch-hex">oklch(96% .015 200)</span></div>
+        <div class="swatch sw-surface"><span class="swatch-name">Surface</span><span class="swatch-hex">oklch(99% .008 200)</span></div>
+        <div class="swatch sw-ink"><span class="swatch-name">Ink</span><span class="swatch-hex">oklch(22% .03 220)</span></div>
+        <div class="swatch sw-muted"><span class="swatch-name">Muted</span><span class="swatch-hex">oklch(65% .02 210)</span></div>
+        <div class="swatch sw-accent"><span class="swatch-name">Accent</span><span class="swatch-hex">oklch(55% .13 200)</span></div>
+        <div class="swatch sw-line"><span class="swatch-name">Line</span><span class="swatch-hex">oklch(85% .015 200)</span></div>
+      </div>
+      <div class="card-body">
+        <div class="fonts-block">
+          <div class="font-row">
+            <span class="font-tag">Display — Space Grotesk</span>
+            <div class="font-display">Make it right</div>
+          </div>
+          <div class="font-row">
+            <span class="font-tag">Body — Work Sans</span>
+            <div class="font-body">We show up fast and treat your home like the job that matters most today.</div>
+          </div>
+          <div class="font-row">
+            <span class="font-tag">Utility — IBM Plex Mono</span>
+            <div class="font-utility">24/7 · CALL (555) 010-2030</div>
+          </div>
+        </div>
+        <a class="cta">Get a Quote</a>
+        <p class="why">Light, cool, and clinical — like a moisture reading on a certified drying log. It sells precision and cleanliness over adrenaline, for the visitor who wants proof of process more than reassurance in the moment.</p>
+      </div>
+    </section>
+
+    <!-- Direction 3: Structural Trust -->
+    <section class="card" id="d3">
+      <div class="card-head">
+        <div class="card-label">Direction 3 — Structural Trust</div>
+        <h2 class="thesis">When water hits, we show up fast — and make it right.</h2>
+        <p class="sample">Licensed technicians. Documented process. Dried and restored — no shortcuts.</p>
+      </div>
+      <div class="swatches">
+        <div class="swatch sw-bg"><span class="swatch-name">BG</span><span class="swatch-hex">oklch(90% .02 60)</span></div>
+        <div class="swatch sw-surface"><span class="swatch-name">Surface</span><span class="swatch-hex">oklch(95% .015 60)</span></div>
+        <div class="swatch sw-ink"><span class="swatch-name">Ink</span><span class="swatch-hex">oklch(24% .02 50)</span></div>
+        <div class="swatch sw-muted"><span class="swatch-name">Muted</span><span class="swatch-hex">oklch(58% .02 50)</span></div>
+        <div class="swatch sw-accent"><span class="swatch-name">Accent</span><span class="swatch-hex">oklch(62% .19 40)</span></div>
+        <div class="swatch sw-line"><span class="swatch-name">Line</span><span class="swatch-hex">oklch(78% .02 55)</span></div>
+      </div>
+      <div class="card-body">
+        <div class="fonts-block">
+          <div class="font-row">
+            <span class="font-tag">Display — Oswald</span>
+            <div class="font-display">MAKE IT RIGHT</div>
+          </div>
+          <div class="font-row">
+            <span class="font-tag">Body — Karla</span>
+            <div class="font-body">We show up fast and treat your home like the job that matters most today.</div>
+          </div>
+          <div class="font-row">
+            <span class="font-tag">Utility — Roboto Mono</span>
+            <div class="font-utility">24/7 · CALL (555) 010-2030</div>
+          </div>
+        </div>
+        <a class="cta">Request Service</a>
+        <p class="why">Warm concrete and stone tones with a hard-hat-orange accent — grounded, boots-on-the-ground, blue-collar trustworthy. It says "we fix structures" before it says "we're an emergency service," a steadier and more workmanlike read.</p>
+      </div>
+    </section>
+
+  </div>
+
+  <p class="prompt"><strong>Reply with 1, 2, or 3.</strong> If you don't choose, I'll build with Direction 1 (Storm Response).</p>
+
+</body>
+</html>

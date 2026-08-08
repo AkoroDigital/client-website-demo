@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contact, Business Name water damage restoration</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Source+Sans+3:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="assets/styles.css" rel="stylesheet">
+</head>
+<body>
+
+  <div class="grain" aria-hidden="true"></div>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <a class="brand" href="index.html">Business Name</a>
+      <nav class="main-nav">
+        <a href="index.html">Home</a>
+        <a href="about.html">About</a>
+        <a href="services.html">Services</a>
+        <a href="contact.html">Contact</a>
+      </nav>
+      <div class="header-actions">
+        <a class="phone-link mono" href="tel:+15550102030">(555) 010-2030</a>
+        <a class="btn btn-primary notch" href="tel:+15550102030">Call Now</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+
+    <section class="page-header">
+      <div class="page-header-media media">
+        <img src="assets/contact-banner.png" alt="Technician on the radio beside the service truck" loading="lazy" class="pos-top">
+      </div>
+      <div class="page-header-content">
+        <span class="eyebrow reveal">Contact</span>
+        <h1 class="reveal">Get in touch.</h1>
+        <p class="lede reveal">If water's actively spreading, call. For everything else, the form below reaches the same crew.</p>
+      </div>
+    </section>
+
+    <section class="contact-layout">
+      <div class="contact-form reveal">
+        <span class="eyebrow">Request a callback</span>
+        <h2>Tell us what's happening.</h2>
+        <p class="lede-form">We'll call back with a quote, usually the same day.</p>
+
+        <!-- static demo form: no backend wired up yet, submit is handled client-side only -->
+        <form id="contact-form" novalidate>
+          <div class="form-field">
+            <label for="name">Name</label>
+            <input type="text" id="name" name="name" required>
+          </div>
+          <div class="form-field">
+            <label for="phone">Phone</label>
+            <input type="tel" id="phone" name="phone" required>
+          </div>
+          <div class="form-field">
+            <label for="address">Address</label>
+            <input type="text" id="address" name="address">
+          </div>
+          <div class="form-field">
+            <label for="details">What happened</label>
+            <textarea id="details" name="details" required></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary notch">Request a callback</button>
+          <p class="form-note">This is a demo form and isn't connected to a phone or inbox yet.</p>
+          <div class="form-success" id="form-success">Thanks — that's in. We'll call you back shortly.</div>
+        </form>
+      </div>
+
+      <div class="contact-details reveal">
+        <div class="detail-block">
+          <span class="detail-label mono">Call</span>
+          <span class="detail-value mono"><a class="phone-link" href="tel:+15550102030">(555) 010-2030</a></span>
+        </div>
+        <div class="detail-block">
+          <span class="detail-label mono">Hours</span>
+          <span class="detail-value mono">[Hours: TBD]</span>
+        </div>
+        <div class="detail-block">
+          <span class="detail-label mono">Address</span>
+          <span class="detail-value mono">[Address: TBD]</span>
+        </div>
+        <!-- placeholder map center; swap the bbox for the real service address once known -->
+        <div class="map-embed media">
+          <iframe title="Service area map" src="https://www.openstreetmap.org/export/embed.html?bbox=-98.7%2C39.55%2C-98.3%2C39.75&amp;layer=mapnik" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <span class="brand">Business Name</span>
+      <nav class="footer-nav">
+        <a href="index.html">Home</a>
+        <a href="about.html">About</a>
+        <a href="services.html">Services</a>
+        <a href="contact.html">Contact</a>
+      </nav>
+      <div class="footer-contact">
+        <span>(555) 010-2030</span>
+        <span>[Address: TBD]</span>
+        <span>[Hours: TBD]</span>
+      </div>
+      <span class="footer-copy mono">© 2026 Business Name. Licensed and insured water damage restoration.</span>
+    </div>
+  </footer>
+
+  <script src="https://unpkg.com/lenis@1.1.13/dist/lenis.min.js"></script>
+  <script src="https://unpkg.com/gsap@3.12.5/dist/gsap.min.js"></script>
+  <script src="https://unpkg.com/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+  <script src="assets/site.js"></script>
+  <script>
+    document.getElementById('contact-form').addEventListener('submit', (e) => {
+      e.preventDefault();
+      document.getElementById('form-success').classList.add('show');
+      e.target.reset();
+    });
+  </script>
+
+</body>
+</html>
