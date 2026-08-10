@@ -694,7 +694,7 @@ body.menu-open { overflow: hidden; }
   letter-spacing: 0.06em;
   color: var(--ink-muted);
 }
-.form-field input, .form-field textarea {
+.form-field input, .form-field textarea, .form-field select {
   width: 100%;
   background: var(--surface);
   border: 1px solid var(--line);
@@ -704,7 +704,7 @@ body.menu-open { overflow: hidden; }
   font-size: 1rem;
   border-radius: 4px;
 }
-.form-field input:focus-visible, .form-field textarea:focus-visible {
+.form-field input:focus-visible, .form-field textarea:focus-visible, .form-field select:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
   border-color: var(--accent);

@@ -72,6 +72,10 @@ body.app-body.no-guard { visibility: visible; }
 
 @media (max-width: 760px) {
   .app-nav { display: none; }
+  .app-header-actions .user-email { display: none; }
+}
+@media (max-width: 420px) {
+  .app-header-inner { gap: var(--space-2); }
 }
 
 /* ---------- list-page header ---------- */
@@ -223,4 +227,14 @@ body.app-body.no-guard { visibility: visible; }
     color: var(--ink-muted);
     margin-bottom: 0.15rem;
   }
+
+  /* line-item tables (estimates/invoices) are too dense to reflow into
+     cards like the list tables above, so they scroll horizontally
+     within the modal instead of squeezing unreadably or breaking layout */
+  .line-items { overflow-x: auto; }
+  .line-items table { min-width: 460px; }
+
+  .modal { padding: var(--space-4); }
+  .modal-actions { flex-direction: column; }
+  .modal-actions .btn { width: 100%; text-align: center; }
 }

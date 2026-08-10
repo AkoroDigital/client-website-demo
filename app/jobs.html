@@ -8,8 +8,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Source+Sans+3:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link href="../assets/styles.css?v=3" rel="stylesheet">
-<link href="assets/app.css?v=4" rel="stylesheet">
+<link href="../assets/styles.css?v=4" rel="stylesheet">
+<link href="assets/app.css?v=5" rel="stylesheet">
 </head>
 <body class="app-body">
 
@@ -30,8 +30,20 @@
       <div class="app-header-actions">
         <span class="user-email mono" id="user-email"></span>
         <button class="btn btn-secondary" id="logout-btn">Log out</button>
+        <button class="menu-toggle notch" id="menu-toggle" aria-expanded="false" aria-controls="mobile-nav" aria-label="Open menu">
+          <span></span><span></span><span></span>
+        </button>
       </div>
     </div>
+    <nav class="mobile-nav" id="mobile-nav" aria-hidden="true">
+      <a href="index.html">Dashboard</a>
+      <a href="clients.html">Clients</a>
+      <a href="leads.html">Leads</a>
+      <a href="jobs.html">Jobs</a>
+      <a href="estimates.html">Estimates</a>
+      <a href="invoices.html">Invoices</a>
+      <a href="recurring.html">Recurring</a>
+    </nav>
   </header>
 
   <main class="app-main">
@@ -132,6 +144,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="assets/supabase-client.js?v=1"></script>
   <script src="assets/auth-guard.js?v=1"></script>
+  <script src="../assets/site.js?v=2"></script>
   <script>
     const listWrap = document.getElementById('job-list-wrap');
     const countEl = document.getElementById('job-count');
@@ -292,7 +305,7 @@
       listEl.innerHTML = docs.map((d) => {
         const filename = d.file_path.split('/').pop();
         return `
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:var(--space-2);padding:0.4rem 0;border-bottom:1px solid var(--line);font-size:0.9rem;">
+        <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:var(--space-2);padding:0.4rem 0;border-bottom:1px solid var(--line);font-size:0.9rem;">
           <span>${escapeHtml(filename)} <span class="muted">(${escapeHtml(d.file_type)})</span></span>
           <span class="row-actions">
             <button type="button" data-view="${d.id}" data-path="${escapeHtml(d.file_path)}">View</button>
