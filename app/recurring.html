@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Recurring jobs, Business Name</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Source+Sans+3:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="../assets/styles.css?v=3" rel="stylesheet">
+<link href="assets/app.css?v=4" rel="stylesheet">
+</head>
+<body class="app-body">
+
+  <div class="grain" aria-hidden="true"></div>
+
+  <header class="app-header">
+    <div class="app-header-inner">
+      <span class="brand">Business Name</span>
+      <nav class="app-nav">
+        <a href="index.html">Dashboard</a>
+        <a href="clients.html">Clients</a>
+        <a href="leads.html">Leads</a>
+        <a href="jobs.html">Jobs</a>
+        <a href="estimates.html">Estimates</a>
+        <a href="invoices.html">Invoices</a>
+        <a href="recurring.html" class="active">Recurring</a>
+      </nav>
+      <div class="app-header-actions">
+        <span class="user-email mono" id="user-email"></span>
+        <button class="btn btn-secondary" id="logout-btn">Log out</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <div class="page-head">
+      <div>
+        <span class="eyebrow">Recurring jobs</span>
+        <h1>Recurring jobs</h1>
+        <p class="count" id="recurring-count"></p>
+      </div>
+      <button class="btn btn-primary notch" id="add-recurring-btn">Add template</button>
+    </div>
+
+    <div id="recurring-list-wrap">
+      <p class="count">Loading…</p>
+    </div>
+  </main>
+
+  <!-- Add / edit modal -->
+  <div class="modal-overlay" id="recurring-modal-overlay">
+    <div class="modal notch">
+      <h2 id="recurring-modal-title">Add template</h2>
+      <form id="recurring-form" novalidate>
+        <input type="hidden" id="recurring-id">
+        <div class="form-field">
+          <label for="recurring-client">Client</label>
+          <select id="recurring-client" required></select>
+        </div>
+        <div class="form-field">
+          <label for="recurring-service">Service</label>
+          <input type="text" id="recurring-service" placeholder="e.g. Monthly dehumidifier check" required>
+        </div>
+        <div class="form-field">
+          <label for="recurring-frequency">Frequency</label>
+          <select id="recurring-frequency">
+            <option value="weekly">Weekly</option>
+            <option value="monthly" selected>Monthly</option>
+            <option value="quarterly">Quarterly</option>
+            <option value="yearly">Yearly</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="recurring-next">Next due date</label>
+          <input type="date" id="recurring-next" required>
+        </div>
+        <div class="form-field">
+          <label for="recurring-active">Active</label>
+          <select id="recurring-active">
+            <option value="true">Active</option>
+            <option value="false">Paused</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="recurring-notes">Notes</label>
+          <textarea id="recurring-notes"></textarea>
+        </div>
+        <p class="modal-error" id="recurring-form-error" role="alert"></p>
+        <div class="modal-actions">
+          <button type="submit" class="btn btn-primary">Save template</button>
+          <button type="button" class="btn btn-secondary" id="recurring-cancel-btn">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="assets/supabase-client.js?v=1"></script>
+  <script src="assets/auth-guard.js?v=1"></script>
+  <script>
+    const listWrap = document.getElementById('recurring-list-wrap');
+    const countEl = document.getElementById('recurring-count');
+    const overlay = document.getElementById('recurring-modal-overlay');
+    const modalTitle = document.getElementById('recurring-modal-title');
+    const form = document.getElementById('recurring-form');
+    const formError = document.getElementById('recurring-form-error');
+    const clientSelect = document.getElementById('recurring-client');
+
+    let recurringCache = [];
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str ?? '';
+      return div.innerHTML;
+    }
+
+    const FREQUENCY_LABEL = { weekly: 'Weekly', monthly: 'Monthly', quarterly: 'Quarterly', yearly: 'Yearly' };
+
+    function advanceDate(dateStr, frequency) {
+      const d = new Date(dateStr + 'T00:00:00');
+      if (frequency === 'weekly') d.setDate(d.getDate() + 7);
+      else if (frequency === 'monthly') d.setMonth(d.getMonth() + 1);
+      else if (frequency === 'quarterly') d.setMonth(d.getMonth() + 3);
+      else if (frequency === 'yearly') d.setFullYear(d.getFullYear() + 1);
+      return d.toISOString().slice(0, 10);
+    }
+
+    function isDue(dateStr) {
+      return dateStr <= new Date().toISOString().slice(0, 10);
+    }
+
+    async function populateClientDropdown(selectedId) {
+      const { data } = await supabaseClient.from('clients').select('id, name').order('name');
+      clientSelect.innerHTML = (data || []).map((c) => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+      if (selectedId) clientSelect.value = selectedId;
+    }
+
+    async function openModal(item) {
+      formError.textContent = '';
+      form.reset();
+      await populateClientDropdown(item?.client_id);
+
+      if (item) {
+        modalTitle.textContent = 'Edit template';
+        document.getElementById('recurring-id').value = item.id;
+        document.getElementById('recurring-service').value = item.service_summary || '';
+        document.getElementById('recurring-frequency').value = item.frequency || 'monthly';
+        document.getElementById('recurring-next').value = item.next_due_date || '';
+        document.getElementById('recurring-active').value = String(item.active);
+        document.getElementById('recurring-notes').value = item.notes || '';
+      } else {
+        modalTitle.textContent = 'Add template';
+        document.getElementById('recurring-id').value = '';
+        document.getElementById('recurring-frequency').value = 'monthly';
+        document.getElementById('recurring-active').value = 'true';
+        document.getElementById('recurring-next').value = new Date().toISOString().slice(0, 10);
+      }
+      overlay.classList.add('open');
+    }
+
+    function closeModal() { overlay.classList.remove('open'); }
+
+    document.getElementById('add-recurring-btn').addEventListener('click', () => openModal(null));
+    document.getElementById('recurring-cancel-btn').addEventListener('click', closeModal);
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(); });
+
+    async function loadRecurring() {
+      const { data, error } = await supabaseClient
+        .from('recurring_jobs')
+        .select('*, clients(name)')
+        .order('next_due_date', { ascending: true });
+
+      if (error) {
+        listWrap.innerHTML = `<p class="count">Couldn't load templates: ${escapeHtml(error.message)}</p>`;
+        return;
+      }
+      recurringCache = data;
+
+      countEl.textContent = data.length === 1 ? '1 template' : `${data.length} templates`;
+
+      if (data.length === 0) {
+        listWrap.innerHTML = `<div class="empty-state">No recurring jobs set up. Add a template for anything that repeats, like ongoing commercial maintenance.</div>`;
+        return;
+      }
+
+      const rows = data.map((r) => `
+        <tr>
+          <td data-label="Client">${escapeHtml(r.clients?.name) || '—'}</td>
+          <td data-label="Service">${escapeHtml(r.service_summary)}</td>
+          <td data-label="Frequency" class="muted">${FREQUENCY_LABEL[r.frequency] || r.frequency}</td>
+          <td data-label="Next due">
+            ${r.active && isDue(r.next_due_date)
+              ? `<span class="status-badge status-overdue">Due ${new Date(r.next_due_date + 'T00:00:00').toLocaleDateString()}</span>`
+              : `<span class="muted">${new Date(r.next_due_date + 'T00:00:00').toLocaleDateString()}</span>`}
+          </td>
+          <td data-label="Status">${r.active ? '<span class="status-badge status-approved">Active</span>' : '<span class="status-badge status-draft">Paused</span>'}</td>
+          <td data-label="Actions">
+            <div class="row-actions">
+              <button type="button" data-generate="${r.id}">Generate job</button>
+              <button type="button" data-edit="${r.id}">Edit</button>
+              <button type="button" class="danger" data-delete="${r.id}">Delete</button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+
+      listWrap.innerHTML = `
+        <table class="data-table">
+          <thead><tr><th>Client</th><th>Service</th><th>Frequency</th><th>Next due</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      `;
+
+      listWrap.querySelectorAll('[data-edit]').forEach((btn) => {
+        btn.addEventListener('click', () => openModal(recurringCache.find((r) => r.id === btn.dataset.edit)));
+      });
+      listWrap.querySelectorAll('[data-delete]').forEach((btn) => {
+        btn.addEventListener('click', () => deleteRecurring(btn.dataset.delete));
+      });
+      listWrap.querySelectorAll('[data-generate]').forEach((btn) => {
+        btn.addEventListener('click', () => generateJob(recurringCache.find((r) => r.id === btn.dataset.generate)));
+      });
+    }
+
+    async function generateJob(item) {
+      if (!confirm(`Create a job for ${item.clients?.name || 'this client'} due ${item.next_due_date}?`)) return;
+
+      const { error: jobError } = await supabaseClient.from('jobs').insert({
+        client_id: item.client_id,
+        service_summary: item.service_summary,
+        status: 'new',
+        scheduled_date: item.next_due_date,
+        notes: item.notes,
+      });
+      if (jobError) {
+        alert('Could not create job: ' + jobError.message);
+        return;
+      }
+
+      const nextDate = advanceDate(item.next_due_date, item.frequency);
+      const { error: updateError } = await supabaseClient
+        .from('recurring_jobs').update({ next_due_date: nextDate }).eq('id', item.id);
+      if (updateError) {
+        alert('Job was created, but updating the next due date failed: ' + updateError.message);
+      }
+
+      alert('Job created on the Jobs page. This template now shows the next due date.');
+      loadRecurring();
+    }
+
+    async function deleteRecurring(id) {
+      if (!confirm('Delete this recurring template? This cannot be undone.')) return;
+      const { error } = await supabaseClient.from('recurring_jobs').delete().eq('id', id);
+      if (error) {
+        alert('Something went wrong: ' + error.message);
+        return;
+      }
+      loadRecurring();
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      formError.textContent = '';
+
+      const id = document.getElementById('recurring-id').value;
+      const payload = {
+        client_id: clientSelect.value || null,
+        service_summary: document.getElementById('recurring-service').value.trim(),
+        frequency: document.getElementById('recurring-frequency').value,
+        next_due_date: document.getElementById('recurring-next').value || null,
+        active: document.getElementById('recurring-active').value === 'true',
+        notes: document.getElementById('recurring-notes').value.trim() || null,
+      };
+
+      if (!payload.client_id) {
+        formError.textContent = 'Pick a client — add one on the Clients page first if needed.';
+        return;
+      }
+      if (!payload.service_summary || !payload.next_due_date) {
+        formError.textContent = 'Service and next due date are required.';
+        return;
+      }
+
+      const query = id
+        ? supabaseClient.from('recurring_jobs').update(payload).eq('id', id)
+        : supabaseClient.from('recurring_jobs').insert(payload);
+
+      const { error } = await query;
+      if (error) {
+        formError.textContent = error.message;
+        return;
+      }
+
+      closeModal();
+      loadRecurring();
+    });
+
+    loadRecurring();
+
+    supabaseClient.auth.getSession().then(({ data: { session } }) => {
+      if (session) document.getElementById('user-email').textContent = session.user.email;
+    });
+    document.getElementById('logout-btn').addEventListener('click', async () => {
+      await supabaseClient.auth.signOut();
+      window.location.href = 'login.html';
+    });
+  </script>
+
+</body>
+</html>

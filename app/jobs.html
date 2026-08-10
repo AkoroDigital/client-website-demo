@@ -25,6 +25,7 @@
         <a href="jobs.html" class="active">Jobs</a>
         <a href="estimates.html">Estimates</a>
         <a href="invoices.html">Invoices</a>
+        <a href="recurring.html">Recurring</a>
       </nav>
       <div class="app-header-actions">
         <span class="user-email mono" id="user-email"></span>
@@ -99,6 +100,35 @@
     </div>
   </div>
 
+  <!-- Documents modal -->
+  <div class="modal-overlay" id="docs-modal-overlay">
+    <div class="modal notch">
+      <h2 id="docs-modal-title">Documents</h2>
+      <div id="docs-list"></div>
+      <form id="docs-upload-form" novalidate style="margin-top: var(--space-3); border-top: 1px solid var(--line); padding-top: var(--space-3);">
+        <input type="hidden" id="docs-job-id">
+        <div class="form-field">
+          <label for="docs-file">File</label>
+          <input type="file" id="docs-file" required>
+        </div>
+        <div class="form-field">
+          <label for="docs-type">Type</label>
+          <select id="docs-type">
+            <option value="photo">Photo</option>
+            <option value="moisture_reading">Moisture reading</option>
+            <option value="insurance">Insurance paperwork</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <p class="modal-error" id="docs-form-error" role="alert"></p>
+        <div class="modal-actions">
+          <button type="submit" class="btn btn-primary" id="docs-upload-btn">Upload</button>
+          <button type="button" class="btn btn-secondary" id="docs-close-btn">Close</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script src="assets/supabase-client.js?v=1"></script>
   <script src="assets/auth-guard.js?v=1"></script>
@@ -111,6 +141,14 @@
     const formError = document.getElementById('job-form-error');
     const clientSelect = document.getElementById('job-client');
     const assignedSelect = document.getElementById('job-assigned');
+
+    const docsOverlay = document.getElementById('docs-modal-overlay');
+    const docsUploadForm = document.getElementById('docs-upload-form');
+    const docsFormError = document.getElementById('docs-form-error');
+
+    let jobsCache = [];
+    let currentUserId = null;
+    let currentDocsJobId = null;
 
     function escapeHtml(str) {
       const div = document.createElement('div');
@@ -177,6 +215,7 @@
         listWrap.innerHTML = `<p class="count">Couldn't load jobs: ${escapeHtml(error.message)}</p>`;
         return;
       }
+      jobsCache = data;
 
       countEl.textContent = data.length === 1 ? '1 job' : `${data.length} jobs`;
 
@@ -195,6 +234,7 @@
           <td data-label="Actions">
             <div class="row-actions">
               <button type="button" data-edit="${j.id}">Edit</button>
+              <button type="button" data-docs="${j.id}">Documents</button>
               <button type="button" class="danger" data-delete="${j.id}">Delete</button>
             </div>
           </td>
@@ -216,7 +256,116 @@
       listWrap.querySelectorAll('[data-delete]').forEach((btn) => {
         btn.addEventListener('click', () => deleteJob(btn.dataset.delete));
       });
+      listWrap.querySelectorAll('[data-docs]').forEach((btn) => {
+        btn.addEventListener('click', () => openDocsModal(jobsCache.find((j) => j.id === btn.dataset.docs)));
+      });
     }
+
+    // ---------- documents ----------
+    async function openDocsModal(job) {
+      currentDocsJobId = job.id;
+      document.getElementById('docs-job-id').value = job.id;
+      document.getElementById('docs-modal-title').textContent = `Documents — ${job.clients?.name || 'job'}`;
+      docsFormError.textContent = '';
+      docsUploadForm.reset();
+      await refreshDocs(job.id);
+      docsOverlay.classList.add('open');
+    }
+
+    async function refreshDocs(jobId) {
+      const listEl = document.getElementById('docs-list');
+      const { data: docs, error } = await supabaseClient
+        .from('documents')
+        .select('*, profiles(full_name)')
+        .eq('job_id', jobId)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        listEl.innerHTML = `<p class="count">Couldn't load documents: ${escapeHtml(error.message)}</p>`;
+        return;
+      }
+      if (!docs.length) {
+        listEl.innerHTML = '<p class="count">No documents uploaded yet.</p>';
+        return;
+      }
+
+      listEl.innerHTML = docs.map((d) => {
+        const filename = d.file_path.split('/').pop();
+        return `
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:var(--space-2);padding:0.4rem 0;border-bottom:1px solid var(--line);font-size:0.9rem;">
+          <span>${escapeHtml(filename)} <span class="muted">(${escapeHtml(d.file_type)})</span></span>
+          <span class="row-actions">
+            <button type="button" data-view="${d.id}" data-path="${escapeHtml(d.file_path)}">View</button>
+            <button type="button" class="danger" data-del-doc="${d.id}" data-path="${escapeHtml(d.file_path)}">Delete</button>
+          </span>
+        </div>
+      `;
+      }).join('');
+
+      listEl.querySelectorAll('[data-view]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const { data, error } = await supabaseClient.storage
+            .from('job-documents').createSignedUrl(btn.dataset.path, 60);
+          if (error) { alert('Could not open file: ' + error.message); return; }
+          window.open(data.signedUrl, '_blank');
+        });
+      });
+      listEl.querySelectorAll('[data-del-doc]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          if (!confirm('Delete this document?')) return;
+          await supabaseClient.storage.from('job-documents').remove([btn.dataset.path]);
+          await supabaseClient.from('documents').delete().eq('id', btn.dataset.delDoc);
+          refreshDocs(currentDocsJobId);
+        });
+      });
+    }
+
+    document.getElementById('docs-close-btn').addEventListener('click', () => docsOverlay.classList.remove('open'));
+    docsOverlay.addEventListener('click', (e) => { if (e.target === docsOverlay) docsOverlay.classList.remove('open'); });
+
+    docsUploadForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      docsFormError.textContent = '';
+
+      const fileInput = document.getElementById('docs-file');
+      const file = fileInput.files[0];
+      if (!file) { docsFormError.textContent = 'Choose a file first.'; return; }
+
+      const uploadBtn = document.getElementById('docs-upload-btn');
+      uploadBtn.disabled = true;
+      uploadBtn.textContent = 'Uploading…';
+
+      const path = `${currentDocsJobId}/${Date.now()}-${file.name}`;
+      const { error: uploadError } = await supabaseClient.storage
+        .from('job-documents').upload(path, file);
+
+      if (uploadError) {
+        docsFormError.textContent = uploadError.message.includes('Bucket not found')
+          ? 'File storage isn’t set up yet — run supabase/storage-setup.sql first.'
+          : uploadError.message;
+        uploadBtn.disabled = false;
+        uploadBtn.textContent = 'Upload';
+        return;
+      }
+
+      const { error: rowError } = await supabaseClient.from('documents').insert({
+        job_id: currentDocsJobId,
+        file_path: path,
+        file_type: document.getElementById('docs-type').value,
+        uploaded_by: currentUserId,
+      });
+
+      uploadBtn.disabled = false;
+      uploadBtn.textContent = 'Upload';
+
+      if (rowError) {
+        docsFormError.textContent = rowError.message;
+        return;
+      }
+
+      docsUploadForm.reset();
+      refreshDocs(currentDocsJobId);
+    });
 
     async function deleteJob(id) {
       if (!confirm('Delete this job? This cannot be undone.')) return;
@@ -273,7 +422,10 @@
     loadJobs();
 
     supabaseClient.auth.getSession().then(({ data: { session } }) => {
-      if (session) document.getElementById('user-email').textContent = session.user.email;
+      if (session) {
+        document.getElementById('user-email').textContent = session.user.email;
+        currentUserId = session.user.id;
+      }
     });
     document.getElementById('logout-btn').addEventListener('click', async () => {
       await supabaseClient.auth.signOut();
