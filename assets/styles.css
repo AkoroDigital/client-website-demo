@@ -354,7 +354,11 @@ p { margin: 0; }
   overflow: hidden;
   transition: max-height 0.3s ease;
 }
-.mobile-nav.open { max-height: 400px; }
+.mobile-nav.open {
+  max-height: calc(100vh - 70px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
 .mobile-nav a {
   display: flex;
   align-items: center;
