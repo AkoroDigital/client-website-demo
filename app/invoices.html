@@ -1,0 +1,477 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Invoices, Business Name</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Source+Sans+3:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="../assets/styles.css?v=3" rel="stylesheet">
+<link href="assets/app.css?v=4" rel="stylesheet">
+</head>
+<body class="app-body">
+
+  <div class="grain" aria-hidden="true"></div>
+
+  <header class="app-header">
+    <div class="app-header-inner">
+      <span class="brand">Business Name</span>
+      <nav class="app-nav">
+        <a href="index.html">Dashboard</a>
+        <a href="clients.html">Clients</a>
+        <a href="leads.html">Leads</a>
+        <a href="jobs.html">Jobs</a>
+        <a href="estimates.html">Estimates</a>
+        <a href="invoices.html" class="active">Invoices</a>
+      </nav>
+      <div class="app-header-actions">
+        <span class="user-email mono" id="user-email"></span>
+        <button class="btn btn-secondary" id="logout-btn">Log out</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <div class="page-head">
+      <div>
+        <span class="eyebrow">Invoices</span>
+        <h1>Invoices</h1>
+        <p class="count" id="invoice-count"></p>
+      </div>
+      <button class="btn btn-primary notch" id="add-invoice-btn">Add invoice</button>
+    </div>
+
+    <div id="invoice-list-wrap">
+      <p class="count">Loading…</p>
+    </div>
+  </main>
+
+  <!-- Add / edit modal -->
+  <div class="modal-overlay" id="invoice-modal-overlay">
+    <div class="modal modal-wide notch">
+      <h2 id="invoice-modal-title">Add invoice</h2>
+      <form id="invoice-form" novalidate>
+        <input type="hidden" id="invoice-id">
+        <div class="form-field">
+          <label for="invoice-job">Job</label>
+          <select id="invoice-job" required></select>
+        </div>
+        <div class="form-field">
+          <label for="invoice-status">Status</label>
+          <select id="invoice-status">
+            <option value="draft">Draft</option>
+            <option value="sent">Sent</option>
+            <option value="paid">Paid</option>
+            <option value="overdue">Overdue</option>
+            <option value="void">Void</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="invoice-due">Due date</label>
+          <input type="date" id="invoice-due">
+        </div>
+
+        <div class="line-items">
+          <table>
+            <thead>
+              <tr><th style="width:22%">Service</th><th>Description</th><th style="width:72px">Qty</th><th style="width:90px">Price</th><th></th></tr>
+            </thead>
+            <tbody id="invoice-line-items"></tbody>
+          </table>
+          <button type="button" class="btn btn-secondary" id="add-invoice-line-btn" style="margin-top: var(--space-2);">+ Add line</button>
+          <p class="line-items-total">Total: <strong id="invoice-total">$0.00</strong></p>
+        </div>
+
+        <p class="modal-error" id="invoice-form-error" role="alert"></p>
+        <div class="modal-actions">
+          <button type="submit" class="btn btn-primary">Save invoice</button>
+          <button type="button" class="btn btn-secondary" id="invoice-cancel-btn">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Payments modal -->
+  <div class="modal-overlay" id="payments-modal-overlay">
+    <div class="modal notch">
+      <h2>Payments</h2>
+      <p class="count" id="payments-summary"></p>
+      <div id="payments-list"></div>
+      <form id="payment-form" novalidate style="margin-top: var(--space-3); border-top: 1px solid var(--line); padding-top: var(--space-3);">
+        <input type="hidden" id="payment-invoice-id">
+        <div class="form-field">
+          <label for="payment-amount">Amount</label>
+          <input type="number" id="payment-amount" min="0" step="0.01" required>
+        </div>
+        <div class="form-field">
+          <label for="payment-method">Method</label>
+          <select id="payment-method">
+            <option value="check">Check</option>
+            <option value="cash">Cash</option>
+            <option value="card">Card</option>
+            <option value="insurance">Insurance</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="payment-date">Date</label>
+          <input type="date" id="payment-date">
+        </div>
+        <div class="form-field">
+          <label for="payment-note">Note</label>
+          <input type="text" id="payment-note">
+        </div>
+        <p class="modal-error" id="payment-form-error" role="alert"></p>
+        <div class="modal-actions">
+          <button type="submit" class="btn btn-primary">Add payment</button>
+          <button type="button" class="btn btn-secondary" id="payment-close-btn">Close</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="assets/supabase-client.js?v=1"></script>
+  <script src="assets/auth-guard.js?v=1"></script>
+  <script>
+    const listWrap = document.getElementById('invoice-list-wrap');
+    const countEl = document.getElementById('invoice-count');
+    const overlay = document.getElementById('invoice-modal-overlay');
+    const modalTitle = document.getElementById('invoice-modal-title');
+    const form = document.getElementById('invoice-form');
+    const formError = document.getElementById('invoice-form-error');
+    const jobSelect = document.getElementById('invoice-job');
+    const lineItemsBody = document.getElementById('invoice-line-items');
+    const totalEl = document.getElementById('invoice-total');
+
+    const paymentsOverlay = document.getElementById('payments-modal-overlay');
+    const paymentForm = document.getElementById('payment-form');
+    const paymentFormError = document.getElementById('payment-form-error');
+
+    let servicesCache = [];
+    let invoicesCache = [];
+    let currentInvoiceId = null;
+    let currentPaymentsInvoiceId = null;
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str ?? '';
+      return div.innerHTML;
+    }
+    function money(n) { return '$' + (Number(n) || 0).toFixed(2); }
+    function itemsTotal(items) { return (items || []).reduce((s, i) => s + i.quantity * i.unit_price, 0); }
+
+    const STATUS_LABEL = { draft: 'Draft', sent: 'Sent', paid: 'Paid', overdue: 'Overdue', void: 'Void' };
+
+    function updateTotal() {
+      let total = 0;
+      lineItemsBody.querySelectorAll('.line-item-row').forEach((row) => {
+        const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
+        const price = parseFloat(row.querySelector('.item-price').value) || 0;
+        total += qty * price;
+      });
+      totalEl.textContent = money(total);
+      return total;
+    }
+
+    function addLineRow(item) {
+      const row = document.createElement('tr');
+      row.className = 'line-item-row';
+      row.innerHTML = `
+        <td>
+          <select class="item-service">
+            <option value="">Custom</option>
+            ${servicesCache.map((s) => `<option value="${s.id}" data-price="${s.default_price}" data-name="${escapeHtml(s.name)}">${escapeHtml(s.name)}</option>`).join('')}
+          </select>
+        </td>
+        <td><input type="text" class="item-desc" placeholder="Description" value="${escapeHtml(item?.description || '')}"></td>
+        <td><input type="number" class="item-qty qty-input" min="0" step="0.5" value="${item?.quantity ?? 1}"></td>
+        <td><input type="number" class="item-price price-input" min="0" step="0.01" value="${item?.unit_price ?? ''}"></td>
+        <td><button type="button" class="remove-line" aria-label="Remove line">&times;</button></td>
+      `;
+      if (item?.service_id) row.querySelector('.item-service').value = item.service_id;
+
+      row.querySelector('.item-service').addEventListener('change', (e) => {
+        const opt = e.target.selectedOptions[0];
+        if (opt.value) {
+          row.querySelector('.item-desc').value = opt.dataset.name;
+          row.querySelector('.item-price').value = opt.dataset.price;
+          updateTotal();
+        }
+      });
+      row.querySelectorAll('.item-qty, .item-price').forEach((el) => el.addEventListener('input', updateTotal));
+      row.querySelector('.remove-line').addEventListener('click', () => { row.remove(); updateTotal(); });
+
+      lineItemsBody.appendChild(row);
+    }
+
+    document.getElementById('add-invoice-line-btn').addEventListener('click', () => addLineRow(null));
+
+    async function ensureServicesLoaded() {
+      if (servicesCache.length) return;
+      const { data } = await supabaseClient.from('services').select('*').order('name');
+      servicesCache = data || [];
+    }
+
+    async function populateJobDropdown(selectedId) {
+      const { data } = await supabaseClient
+        .from('jobs')
+        .select('id, service_summary, clients(name)')
+        .order('created_at', { ascending: false });
+      jobSelect.innerHTML = (data || [])
+        .map((j) => `<option value="${j.id}">${escapeHtml(j.clients?.name) || 'Unknown client'} — ${escapeHtml(j.service_summary)}</option>`)
+        .join('');
+      if (selectedId) jobSelect.value = selectedId;
+    }
+
+    async function openModal(invoice) {
+      formError.textContent = '';
+      form.reset();
+      lineItemsBody.innerHTML = '';
+      currentInvoiceId = invoice?.id || null;
+
+      await ensureServicesLoaded();
+      await populateJobDropdown(invoice?.job_id);
+
+      if (invoice) {
+        modalTitle.textContent = 'Edit invoice';
+        document.getElementById('invoice-id').value = invoice.id;
+        document.getElementById('invoice-status').value = invoice.status || 'draft';
+        document.getElementById('invoice-due').value = invoice.due_date || '';
+
+        const { data: items } = await supabaseClient
+          .from('invoice_items').select('*').eq('invoice_id', invoice.id);
+        if (items && items.length) items.forEach((item) => addLineRow(item));
+        else addLineRow(null);
+      } else {
+        modalTitle.textContent = 'Add invoice';
+        document.getElementById('invoice-id').value = '';
+        document.getElementById('invoice-status').value = 'draft';
+        addLineRow(null);
+      }
+      updateTotal();
+      overlay.classList.add('open');
+    }
+
+    function closeModal() { overlay.classList.remove('open'); }
+
+    document.getElementById('add-invoice-btn').addEventListener('click', () => openModal(null));
+    document.getElementById('invoice-cancel-btn').addEventListener('click', closeModal);
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(); });
+
+    async function loadInvoices() {
+      const { data, error } = await supabaseClient
+        .from('invoices')
+        .select('*, jobs(service_summary, clients(name)), invoice_items(quantity, unit_price), payments(amount)')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        listWrap.innerHTML = `<p class="count">Couldn't load invoices: ${escapeHtml(error.message)}</p>`;
+        return;
+      }
+      invoicesCache = data;
+
+      countEl.textContent = data.length === 1 ? '1 invoice' : `${data.length} invoices`;
+
+      if (data.length === 0) {
+        listWrap.innerHTML = `<div class="empty-state">No invoices yet. Add one against a job.</div>`;
+        return;
+      }
+
+      const rows = data.map((inv) => {
+        const total = itemsTotal(inv.invoice_items);
+        const paid = (inv.payments || []).reduce((s, p) => s + Number(p.amount), 0);
+        const balance = total - paid;
+        return `
+        <tr>
+          <td data-label="Client">${escapeHtml(inv.jobs?.clients?.name) || '—'}</td>
+          <td data-label="Job" class="muted">${escapeHtml(inv.jobs?.service_summary) || '—'}</td>
+          <td data-label="Status"><span class="status-badge status-${inv.status}">${STATUS_LABEL[inv.status] || inv.status}</span></td>
+          <td data-label="Total" class="mono">${money(total)}</td>
+          <td data-label="Balance" class="mono">${money(balance)}</td>
+          <td data-label="Due" class="muted">${inv.due_date ? new Date(inv.due_date + 'T00:00:00').toLocaleDateString() : '—'}</td>
+          <td data-label="Actions">
+            <div class="row-actions">
+              <button type="button" data-edit="${inv.id}">Edit</button>
+              <button type="button" data-payments="${inv.id}">Payments</button>
+              <button type="button" class="danger" data-delete="${inv.id}">Delete</button>
+            </div>
+          </td>
+        </tr>
+      `;
+      }).join('');
+
+      listWrap.innerHTML = `
+        <table class="data-table">
+          <thead><tr><th>Client</th><th>Job</th><th>Status</th><th>Total</th><th>Balance</th><th>Due</th><th>Actions</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      `;
+
+      listWrap.querySelectorAll('[data-edit]').forEach((btn) => {
+        btn.addEventListener('click', () => openModal(invoicesCache.find((i) => i.id === btn.dataset.edit)));
+      });
+      listWrap.querySelectorAll('[data-delete]').forEach((btn) => {
+        btn.addEventListener('click', () => deleteInvoice(btn.dataset.delete));
+      });
+      listWrap.querySelectorAll('[data-payments]').forEach((btn) => {
+        btn.addEventListener('click', () => openPaymentsModal(invoicesCache.find((i) => i.id === btn.dataset.payments)));
+      });
+    }
+
+    async function deleteInvoice(id) {
+      if (!confirm('Delete this invoice? This also deletes its payment records. This cannot be undone.')) return;
+      const { error } = await supabaseClient.from('invoices').delete().eq('id', id);
+      if (error) {
+        alert('Something went wrong: ' + error.message);
+        return;
+      }
+      loadInvoices();
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      formError.textContent = '';
+
+      const jobId = jobSelect.value;
+      if (!jobId) {
+        formError.textContent = 'Pick a job — add one on the Jobs page first if needed.';
+        return;
+      }
+
+      const items = [...lineItemsBody.querySelectorAll('.line-item-row')].map((row) => ({
+        service_id: row.querySelector('.item-service').value || null,
+        description: row.querySelector('.item-desc').value.trim(),
+        quantity: parseFloat(row.querySelector('.item-qty').value) || 0,
+        unit_price: parseFloat(row.querySelector('.item-price').value) || 0,
+      })).filter((i) => i.description);
+
+      if (items.length === 0) {
+        formError.textContent = 'Add at least one line item.';
+        return;
+      }
+
+      const payload = {
+        job_id: jobId,
+        status: document.getElementById('invoice-status').value,
+        due_date: document.getElementById('invoice-due').value || null,
+      };
+
+      let invoiceId = currentInvoiceId;
+      if (invoiceId) {
+        const { error } = await supabaseClient.from('invoices').update(payload).eq('id', invoiceId);
+        if (error) { formError.textContent = error.message; return; }
+        await supabaseClient.from('invoice_items').delete().eq('invoice_id', invoiceId);
+      } else {
+        const { data, error } = await supabaseClient.from('invoices').insert(payload).select().single();
+        if (error) { formError.textContent = error.message; return; }
+        invoiceId = data.id;
+      }
+
+      const { error: itemsError } = await supabaseClient
+        .from('invoice_items')
+        .insert(items.map((i) => ({ ...i, invoice_id: invoiceId })));
+
+      if (itemsError) {
+        formError.textContent = itemsError.message;
+        return;
+      }
+
+      closeModal();
+      loadInvoices();
+    });
+
+    // ---------- payments ----------
+    async function openPaymentsModal(invoice) {
+      currentPaymentsInvoiceId = invoice.id;
+      document.getElementById('payment-invoice-id').value = invoice.id;
+      document.getElementById('payment-amount').value = '';
+      document.getElementById('payment-method').value = 'check';
+      document.getElementById('payment-date').value = new Date().toISOString().slice(0, 10);
+      document.getElementById('payment-note').value = '';
+      paymentFormError.textContent = '';
+      await refreshPayments(invoice);
+      paymentsOverlay.classList.add('open');
+    }
+
+    async function refreshPayments(invoice) {
+      const { data: payments } = await supabaseClient
+        .from('payments').select('*').eq('invoice_id', invoice.id).order('paid_on', { ascending: false });
+
+      const total = itemsTotal(invoice.invoice_items);
+      const paid = (payments || []).reduce((s, p) => s + Number(p.amount), 0);
+      document.getElementById('payments-summary').textContent =
+        `Total ${money(total)} — Paid ${money(paid)} — Balance ${money(total - paid)}`;
+
+      const listEl = document.getElementById('payments-list');
+      if (!payments || !payments.length) {
+        listEl.innerHTML = '<p class="count">No payments recorded yet.</p>';
+        return;
+      }
+      listEl.innerHTML = payments.map((p) => `
+        <div style="display:flex;justify-content:space-between;gap:var(--space-2);padding:0.4rem 0;border-bottom:1px solid var(--line);font-size:0.9rem;">
+          <span>${new Date(p.paid_on + 'T00:00:00').toLocaleDateString()} — ${escapeHtml(p.method)}${p.note ? ' — ' + escapeHtml(p.note) : ''}</span>
+          <span class="mono">${money(p.amount)} <button type="button" data-del-payment="${p.id}" style="background:none;border:none;color:var(--ink-muted);cursor:pointer;margin-left:0.5rem;">&times;</button></span>
+        </div>
+      `).join('');
+
+      listEl.querySelectorAll('[data-del-payment]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          if (!confirm('Delete this payment record?')) return;
+          await supabaseClient.from('payments').delete().eq('id', btn.dataset.delPayment);
+          await refreshPayments(invoice);
+          loadInvoices();
+        });
+      });
+    }
+
+    document.getElementById('payment-close-btn').addEventListener('click', () => paymentsOverlay.classList.remove('open'));
+    paymentsOverlay.addEventListener('click', (e) => { if (e.target === paymentsOverlay) paymentsOverlay.classList.remove('open'); });
+
+    paymentForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      paymentFormError.textContent = '';
+
+      const amount = parseFloat(document.getElementById('payment-amount').value);
+      if (!amount || amount <= 0) {
+        paymentFormError.textContent = 'Enter a valid amount.';
+        return;
+      }
+
+      const payload = {
+        invoice_id: currentPaymentsInvoiceId,
+        amount,
+        method: document.getElementById('payment-method').value,
+        paid_on: document.getElementById('payment-date').value || new Date().toISOString().slice(0, 10),
+        note: document.getElementById('payment-note').value.trim() || null,
+      };
+
+      const { error } = await supabaseClient.from('payments').insert(payload);
+      if (error) {
+        paymentFormError.textContent = error.message;
+        return;
+      }
+
+      document.getElementById('payment-amount').value = '';
+      document.getElementById('payment-note').value = '';
+
+      const invoice = invoicesCache.find((i) => i.id === currentPaymentsInvoiceId);
+      await refreshPayments(invoice);
+      loadInvoices();
+    });
+
+    loadInvoices();
+
+    supabaseClient.auth.getSession().then(({ data: { session } }) => {
+      if (session) document.getElementById('user-email').textContent = session.user.email;
+    });
+    document.getElementById('logout-btn').addEventListener('click', async () => {
+      await supabaseClient.auth.signOut();
+      window.location.href = 'login.html';
+    });
+  </script>
+
+</body>
+</html>
