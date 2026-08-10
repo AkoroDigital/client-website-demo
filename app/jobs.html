@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Jobs, Business Name</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Source+Sans+3:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="../assets/styles.css?v=3" rel="stylesheet">
+<link href="assets/app.css?v=3" rel="stylesheet">
+</head>
+<body class="app-body">
+
+  <div class="grain" aria-hidden="true"></div>
+
+  <header class="app-header">
+    <div class="app-header-inner">
+      <span class="brand">Business Name</span>
+      <nav class="app-nav">
+        <a href="index.html">Dashboard</a>
+        <a href="clients.html">Clients</a>
+        <a href="leads.html">Leads</a>
+        <a href="jobs.html" class="active">Jobs</a>
+        <!-- Estimates / Invoices links land here as we build them -->
+      </nav>
+      <div class="app-header-actions">
+        <span class="user-email mono" id="user-email"></span>
+        <button class="btn btn-secondary" id="logout-btn">Log out</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <div class="page-head">
+      <div>
+        <span class="eyebrow">Jobs</span>
+        <h1>Jobs</h1>
+        <p class="count" id="job-count"></p>
+      </div>
+      <button class="btn btn-primary notch" id="add-job-btn">Add job</button>
+    </div>
+
+    <div id="job-list-wrap">
+      <p class="count">Loading…</p>
+    </div>
+  </main>
+
+  <!-- Add / edit modal -->
+  <div class="modal-overlay" id="job-modal-overlay">
+    <div class="modal notch">
+      <h2 id="job-modal-title">Add job</h2>
+      <form id="job-form" novalidate>
+        <input type="hidden" id="job-id">
+        <div class="form-field">
+          <label for="job-client">Client</label>
+          <select id="job-client" required></select>
+        </div>
+        <div class="form-field">
+          <label for="job-service">Service</label>
+          <input type="text" id="job-service" placeholder="e.g. Water extraction + drying" required>
+        </div>
+        <div class="form-field">
+          <label for="job-status">Status</label>
+          <select id="job-status">
+            <option value="new">New</option>
+            <option value="in_progress">In progress</option>
+            <option value="drying">Drying</option>
+            <option value="complete">Complete</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="job-address">Job address</label>
+          <input type="text" id="job-address">
+        </div>
+        <div class="form-field">
+          <label for="job-assigned">Assigned to</label>
+          <select id="job-assigned">
+            <option value="">Unassigned</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="job-date">Scheduled date</label>
+          <input type="date" id="job-date">
+        </div>
+        <div class="form-field">
+          <label for="job-notes">Notes</label>
+          <textarea id="job-notes"></textarea>
+        </div>
+        <p class="modal-error" id="job-form-error" role="alert"></p>
+        <div class="modal-actions">
+          <button type="submit" class="btn btn-primary">Save job</button>
+          <button type="button" class="btn btn-secondary" id="job-cancel-btn">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="assets/supabase-client.js?v=1"></script>
+  <script src="assets/auth-guard.js?v=1"></script>
+  <script>
+    const listWrap = document.getElementById('job-list-wrap');
+    const countEl = document.getElementById('job-count');
+    const overlay = document.getElementById('job-modal-overlay');
+    const modalTitle = document.getElementById('job-modal-title');
+    const form = document.getElementById('job-form');
+    const formError = document.getElementById('job-form-error');
+    const clientSelect = document.getElementById('job-client');
+    const assignedSelect = document.getElementById('job-assigned');
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str ?? '';
+      return div.innerHTML;
+    }
+
+    const STATUS_LABEL = {
+      new: 'New', in_progress: 'In progress', drying: 'Drying',
+      complete: 'Complete', cancelled: 'Cancelled',
+    };
+
+    async function populateDropdowns(selectedClientId, selectedAssignedId) {
+      const [{ data: clients }, { data: profiles }] = await Promise.all([
+        supabaseClient.from('clients').select('id, name').order('name'),
+        supabaseClient.from('profiles').select('id, full_name').order('full_name'),
+      ]);
+
+      clientSelect.innerHTML = (clients || [])
+        .map((c) => `<option value="${c.id}">${escapeHtml(c.name)}</option>`)
+        .join('');
+      if (selectedClientId) clientSelect.value = selectedClientId;
+
+      assignedSelect.innerHTML = '<option value="">Unassigned</option>' + (profiles || [])
+        .map((p) => `<option value="${p.id}">${escapeHtml(p.full_name)}</option>`)
+        .join('');
+      assignedSelect.value = selectedAssignedId || '';
+    }
+
+    async function openModal(job) {
+      formError.textContent = '';
+      form.reset();
+      await populateDropdowns(job?.client_id, job?.assigned_to);
+
+      if (job) {
+        modalTitle.textContent = 'Edit job';
+        document.getElementById('job-id').value = job.id;
+        document.getElementById('job-service').value = job.service_summary || '';
+        document.getElementById('job-status').value = job.status || 'new';
+        document.getElementById('job-address').value = job.address || '';
+        document.getElementById('job-date').value = job.scheduled_date || '';
+        document.getElementById('job-notes').value = job.notes || '';
+      } else {
+        modalTitle.textContent = 'Add job';
+        document.getElementById('job-id').value = '';
+        document.getElementById('job-status').value = 'new';
+      }
+      overlay.classList.add('open');
+    }
+
+    function closeModal() { overlay.classList.remove('open'); }
+
+    document.getElementById('add-job-btn').addEventListener('click', () => openModal(null));
+    document.getElementById('job-cancel-btn').addEventListener('click', closeModal);
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(); });
+
+    async function loadJobs() {
+      const { data, error } = await supabaseClient
+        .from('jobs')
+        .select('*, clients(name), profiles(full_name)')
+        .order('scheduled_date', { ascending: true, nullsFirst: false });
+
+      if (error) {
+        listWrap.innerHTML = `<p class="count">Couldn't load jobs: ${escapeHtml(error.message)}</p>`;
+        return;
+      }
+
+      countEl.textContent = data.length === 1 ? '1 job' : `${data.length} jobs`;
+
+      if (data.length === 0) {
+        listWrap.innerHTML = `<div class="empty-state">No jobs yet. Add one, or convert a lead into a client and then a job.</div>`;
+        return;
+      }
+
+      const rows = data.map((j) => `
+        <tr>
+          <td data-label="Client">${escapeHtml(j.clients?.name) || '—'}</td>
+          <td data-label="Service">${escapeHtml(j.service_summary)}</td>
+          <td data-label="Status"><span class="status-badge status-${j.status}">${STATUS_LABEL[j.status] || j.status}</span></td>
+          <td data-label="Scheduled" class="muted">${j.scheduled_date ? new Date(j.scheduled_date + 'T00:00:00').toLocaleDateString() : '—'}</td>
+          <td data-label="Assigned to" class="muted">${escapeHtml(j.profiles?.full_name) || 'Unassigned'}</td>
+          <td data-label="Actions">
+            <div class="row-actions">
+              <button type="button" data-edit="${j.id}">Edit</button>
+              <button type="button" class="danger" data-delete="${j.id}">Delete</button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+
+      listWrap.innerHTML = `
+        <table class="data-table">
+          <thead>
+            <tr><th>Client</th><th>Service</th><th>Status</th><th>Scheduled</th><th>Assigned to</th><th>Actions</th></tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      `;
+
+      listWrap.querySelectorAll('[data-edit]').forEach((btn) => {
+        btn.addEventListener('click', () => openModal(data.find((j) => j.id === btn.dataset.edit)));
+      });
+      listWrap.querySelectorAll('[data-delete]').forEach((btn) => {
+        btn.addEventListener('click', () => deleteJob(btn.dataset.delete));
+      });
+    }
+
+    async function deleteJob(id) {
+      if (!confirm('Delete this job? This cannot be undone.')) return;
+      const { error } = await supabaseClient.from('jobs').delete().eq('id', id);
+      if (error) {
+        if (error.message.includes('violates foreign key')) {
+          alert("Can't delete this job — it still has invoices or documents on file.");
+        } else {
+          alert('Something went wrong: ' + error.message);
+        }
+        return;
+      }
+      loadJobs();
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      formError.textContent = '';
+
+      const id = document.getElementById('job-id').value;
+      const payload = {
+        client_id: clientSelect.value || null,
+        service_summary: document.getElementById('job-service').value.trim(),
+        status: document.getElementById('job-status').value,
+        address: document.getElementById('job-address').value.trim() || null,
+        assigned_to: assignedSelect.value || null,
+        scheduled_date: document.getElementById('job-date').value || null,
+        notes: document.getElementById('job-notes').value.trim() || null,
+      };
+
+      if (!payload.client_id) {
+        formError.textContent = 'Pick a client — add one on the Clients page first if needed.';
+        return;
+      }
+      if (!payload.service_summary) {
+        formError.textContent = 'Service is required.';
+        return;
+      }
+
+      const query = id
+        ? supabaseClient.from('jobs').update(payload).eq('id', id)
+        : supabaseClient.from('jobs').insert(payload);
+
+      const { error } = await query;
+      if (error) {
+        formError.textContent = error.message;
+        return;
+      }
+
+      closeModal();
+      loadJobs();
+    });
+
+    loadJobs();
+
+    supabaseClient.auth.getSession().then(({ data: { session } }) => {
+      if (session) document.getElementById('user-email').textContent = session.user.email;
+    });
+    document.getElementById('logout-btn').addEventListener('click', async () => {
+      await supabaseClient.auth.signOut();
+      window.location.href = 'login.html';
+    });
+  </script>
+
+</body>
+</html>

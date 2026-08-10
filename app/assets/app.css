@@ -1,0 +1,187 @@
+/* Styles for the internal team app. Reuses the color/type variables
+   from the main site's assets/styles.css (loaded before this file). */
+
+body.app-body { visibility: hidden; }
+html.authed body.app-body,
+body.app-body.no-guard { visibility: visible; }
+
+/* ---------- auth screens ---------- */
+.auth-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-3);
+}
+.auth-card {
+  width: 100%;
+  max-width: 380px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  padding: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.auth-card .brand { display: block; margin-bottom: var(--space-4); }
+.auth-title { font-size: 1.5rem; margin-bottom: var(--space-1); }
+.auth-sub { color: var(--ink-muted); margin-bottom: var(--space-3); }
+.auth-error {
+  color: oklch(68% 0.16 25);
+  min-height: 1.2em;
+  font-size: 0.9rem;
+  margin-top: var(--space-1);
+}
+.auth-card form { display: flex; flex-direction: column; }
+.auth-card button[type="submit"] { width: 100%; text-align: center; margin-top: var(--space-2); }
+
+/* ---------- app shell ---------- */
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: oklch(18% 0.03 250 / 0.95);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--line);
+}
+.app-header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  max-width: 1200px;
+  margin: 0 auto;
+}
+.app-nav { display: flex; gap: var(--space-3); flex: 1; padding-left: var(--space-5); }
+.app-nav a {
+  color: var(--ink-muted);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+.app-nav a.active, .app-nav a:hover { color: var(--ink); }
+.app-header-actions { display: flex; align-items: center; gap: var(--space-3); }
+.app-header-actions .user-email { color: var(--ink-muted); font-size: 0.8rem; }
+
+.app-main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--space-6) var(--space-3);
+}
+
+@media (max-width: 760px) {
+  .app-nav { display: none; }
+}
+
+/* ---------- list-page header ---------- */
+.page-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-5);
+}
+.page-head .count { color: var(--ink-muted); font-size: 0.85rem; margin-top: 0.25rem; }
+
+/* ---------- data table ---------- */
+.data-table { width: 100%; border-collapse: collapse; }
+.data-table th, .data-table td {
+  text-align: left;
+  padding: var(--space-2);
+  border-bottom: 1px solid var(--line);
+  font-size: 0.9rem;
+  vertical-align: top;
+}
+.data-table th {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-muted);
+  font-weight: 500;
+}
+.data-table tbody tr { transition: background-color 0.15s ease; }
+.data-table tbody tr:hover { background: var(--surface); }
+.data-table td.muted { color: var(--ink-muted); }
+.row-actions { display: flex; gap: var(--space-3); white-space: nowrap; }
+.row-actions button {
+  background: none;
+  border: none;
+  color: var(--ink-muted);
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.row-actions button:hover { color: var(--ink); }
+.row-actions button.danger:hover { color: oklch(68% 0.16 25); }
+
+.status-badge {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.2rem 0.5rem;
+  border-radius: 2px;
+  border: 1px solid currentColor;
+  white-space: nowrap;
+}
+.status-new, .status-draft { color: var(--ink-muted); }
+.status-contacted, .status-sent, .status-in_progress { color: var(--accent); }
+.status-booked, .status-drying { color: oklch(75% 0.14 200); }
+.status-complete, .status-approved, .status-paid { color: oklch(75% 0.16 140); }
+.status-lost, .status-declined, .status-cancelled, .status-overdue, .status-void { color: oklch(68% 0.16 25); }
+
+.empty-state {
+  border: 1px dashed var(--line);
+  padding: var(--space-6) var(--space-3);
+  text-align: center;
+  color: var(--ink-muted);
+}
+
+/* ---------- modal ---------- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: oklch(18% 0.03 250 / 0.7);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-3);
+  z-index: 50;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: var(--space-5);
+}
+.modal h2 { font-size: 1.25rem; margin-bottom: var(--space-4); text-transform: none; letter-spacing: 0; }
+.modal-actions { display: flex; gap: var(--space-2); margin-top: var(--space-3); }
+.modal-error { color: oklch(68% 0.16 25); font-size: 0.9rem; min-height: 1.2em; margin-top: var(--space-1); }
+
+@media (max-width: 700px) {
+  .data-table thead { display: none; }
+  .data-table, .data-table tbody, .data-table tr, .data-table td { display: block; width: 100%; }
+  .data-table tr { border-bottom: 1px solid var(--line); padding: var(--space-2) 0; }
+  .data-table td { border-bottom: none; padding: 0.25rem 0; }
+  .data-table td[data-label]::before {
+    content: attr(data-label);
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--ink-muted);
+    margin-bottom: 0.15rem;
+  }
+}

@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Leads, Business Name</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Source+Sans+3:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="../assets/styles.css?v=3" rel="stylesheet">
+<link href="assets/app.css?v=3" rel="stylesheet">
+</head>
+<body class="app-body">
+
+  <div class="grain" aria-hidden="true"></div>
+
+  <header class="app-header">
+    <div class="app-header-inner">
+      <span class="brand">Business Name</span>
+      <nav class="app-nav">
+        <a href="index.html">Dashboard</a>
+        <a href="clients.html">Clients</a>
+        <a href="leads.html" class="active">Leads</a>
+        <a href="jobs.html">Jobs</a>
+        <!-- Estimates / Invoices links land here as we build them -->
+      </nav>
+      <div class="app-header-actions">
+        <span class="user-email mono" id="user-email"></span>
+        <button class="btn btn-secondary" id="logout-btn">Log out</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <div class="page-head">
+      <div>
+        <span class="eyebrow">Leads</span>
+        <h1>Leads</h1>
+        <p class="count" id="lead-count"></p>
+      </div>
+      <button class="btn btn-primary notch" id="add-lead-btn">Add lead</button>
+    </div>
+
+    <div id="lead-list-wrap">
+      <p class="count">Loading…</p>
+    </div>
+  </main>
+
+  <!-- Add / edit modal -->
+  <div class="modal-overlay" id="lead-modal-overlay">
+    <div class="modal notch">
+      <h2 id="lead-modal-title">Add lead</h2>
+      <form id="lead-form" novalidate>
+        <input type="hidden" id="lead-id">
+        <div class="form-field">
+          <label for="lead-name">Name</label>
+          <input type="text" id="lead-name" required>
+        </div>
+        <div class="form-field">
+          <label for="lead-phone">Phone</label>
+          <input type="tel" id="lead-phone">
+        </div>
+        <div class="form-field">
+          <label for="lead-email">Email</label>
+          <input type="email" id="lead-email">
+        </div>
+        <div class="form-field">
+          <label for="lead-details">What happened</label>
+          <textarea id="lead-details"></textarea>
+        </div>
+        <div class="form-field">
+          <label for="lead-status">Status</label>
+          <select id="lead-status">
+            <option value="new">New</option>
+            <option value="contacted">Contacted</option>
+            <option value="booked">Booked</option>
+            <option value="lost">Lost</option>
+          </select>
+        </div>
+        <p class="modal-error" id="lead-form-error" role="alert"></p>
+        <div class="modal-actions">
+          <button type="submit" class="btn btn-primary">Save lead</button>
+          <button type="button" class="btn btn-secondary" id="lead-cancel-btn">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="assets/supabase-client.js?v=1"></script>
+  <script src="assets/auth-guard.js?v=1"></script>
+  <script>
+    const listWrap = document.getElementById('lead-list-wrap');
+    const countEl = document.getElementById('lead-count');
+    const overlay = document.getElementById('lead-modal-overlay');
+    const modalTitle = document.getElementById('lead-modal-title');
+    const form = document.getElementById('lead-form');
+    const formError = document.getElementById('lead-form-error');
+
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str ?? '';
+      return div.innerHTML;
+    }
+
+    const STATUS_LABEL = { new: 'New', contacted: 'Contacted', booked: 'Booked', lost: 'Lost' };
+
+    function openModal(lead) {
+      formError.textContent = '';
+      form.reset();
+      if (lead) {
+        modalTitle.textContent = 'Edit lead';
+        document.getElementById('lead-id').value = lead.id;
+        document.getElementById('lead-name').value = lead.name || '';
+        document.getElementById('lead-phone').value = lead.phone || '';
+        document.getElementById('lead-email').value = lead.email || '';
+        document.getElementById('lead-details').value = lead.details || '';
+        document.getElementById('lead-status').value = lead.status || 'new';
+      } else {
+        modalTitle.textContent = 'Add lead';
+        document.getElementById('lead-id').value = '';
+        document.getElementById('lead-status').value = 'new';
+      }
+      overlay.classList.add('open');
+      document.getElementById('lead-name').focus();
+    }
+
+    function closeModal() { overlay.classList.remove('open'); }
+
+    document.getElementById('add-lead-btn').addEventListener('click', () => openModal(null));
+    document.getElementById('lead-cancel-btn').addEventListener('click', closeModal);
+    overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(); });
+
+    async function loadLeads() {
+      const { data, error } = await supabaseClient
+        .from('leads')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        listWrap.innerHTML = `<p class="count">Couldn't load leads: ${escapeHtml(error.message)}</p>`;
+        return;
+      }
+
+      countEl.textContent = data.length === 1 ? '1 lead' : `${data.length} leads`;
+
+      if (data.length === 0) {
+        listWrap.innerHTML = `<div class="empty-state">No leads yet. Add one, or they'll show up here from the site's Contact form once that's connected.</div>`;
+        return;
+      }
+
+      const rows = data.map((l) => `
+        <tr>
+          <td data-label="Name">${escapeHtml(l.name)}</td>
+          <td data-label="Phone" class="muted">${escapeHtml(l.phone) || '—'}</td>
+          <td data-label="Status"><span class="status-badge status-${l.status}">${STATUS_LABEL[l.status] || l.status}</span></td>
+          <td data-label="Received" class="muted">${new Date(l.created_at).toLocaleDateString()}</td>
+          <td data-label="Actions">
+            <div class="row-actions">
+              <button type="button" data-edit="${l.id}">Edit</button>
+              ${l.converted_client_id
+                ? '<span class="muted">Converted</span>'
+                : `<button type="button" data-convert="${l.id}">Convert to client</button>`}
+              <button type="button" class="danger" data-delete="${l.id}">Delete</button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+
+      listWrap.innerHTML = `
+        <table class="data-table">
+          <thead>
+            <tr><th>Name</th><th>Phone</th><th>Status</th><th>Received</th><th>Actions</th></tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      `;
+
+      listWrap.querySelectorAll('[data-edit]').forEach((btn) => {
+        btn.addEventListener('click', () => openModal(data.find((l) => l.id === btn.dataset.edit)));
+      });
+      listWrap.querySelectorAll('[data-delete]').forEach((btn) => {
+        btn.addEventListener('click', () => deleteLead(btn.dataset.delete));
+      });
+      listWrap.querySelectorAll('[data-convert]').forEach((btn) => {
+        btn.addEventListener('click', () => convertLead(data.find((l) => l.id === btn.dataset.convert)));
+      });
+    }
+
+    async function convertLead(lead) {
+      if (!confirm(`Create a client record for ${lead.name}?`)) return;
+
+      const { data: newClient, error: clientError } = await supabaseClient
+        .from('clients')
+        .insert({ name: lead.name, phone: lead.phone, email: lead.email, notes: lead.details })
+        .select()
+        .single();
+
+      if (clientError) {
+        alert('Could not create client: ' + clientError.message);
+        return;
+      }
+
+      const { error: leadError } = await supabaseClient
+        .from('leads')
+        .update({ status: 'booked', converted_client_id: newClient.id })
+        .eq('id', lead.id);
+
+      if (leadError) {
+        alert('Client was created, but updating the lead failed: ' + leadError.message);
+      }
+
+      loadLeads();
+    }
+
+    async function deleteLead(id) {
+      if (!confirm('Delete this lead? This cannot be undone.')) return;
+      const { error } = await supabaseClient.from('leads').delete().eq('id', id);
+      if (error) {
+        alert('Something went wrong: ' + error.message);
+        return;
+      }
+      loadLeads();
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      formError.textContent = '';
+
+      const id = document.getElementById('lead-id').value;
+      const payload = {
+        name: document.getElementById('lead-name').value.trim(),
+        phone: document.getElementById('lead-phone').value.trim() || null,
+        email: document.getElementById('lead-email').value.trim() || null,
+        details: document.getElementById('lead-details').value.trim() || null,
+        status: document.getElementById('lead-status').value,
+      };
+
+      if (!payload.name) {
+        formError.textContent = 'Name is required.';
+        return;
+      }
+
+      const query = id
+        ? supabaseClient.from('leads').update(payload).eq('id', id)
+        : supabaseClient.from('leads').insert(payload);
+
+      const { error } = await query;
+      if (error) {
+        formError.textContent = error.message;
+        return;
+      }
+
+      closeModal();
+      loadLeads();
+    });
+
+    loadLeads();
+
+    supabaseClient.auth.getSession().then(({ data: { session } }) => {
+      if (session) document.getElementById('user-email').textContent = session.user.email;
+    });
+    document.getElementById('logout-btn').addEventListener('click', async () => {
+      await supabaseClient.auth.signOut();
+      window.location.href = 'login.html';
+    });
+  </script>
+
+</body>
+</html>

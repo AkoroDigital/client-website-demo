@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Dashboard, Business Name</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Source+Sans+3:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="../assets/styles.css?v=3" rel="stylesheet">
+<link href="assets/app.css?v=3" rel="stylesheet">
+</head>
+<body class="app-body">
+
+  <div class="grain" aria-hidden="true"></div>
+
+  <header class="app-header">
+    <div class="app-header-inner">
+      <span class="brand">Business Name</span>
+      <nav class="app-nav">
+        <a href="index.html" class="active">Dashboard</a>
+        <a href="clients.html">Clients</a>
+        <a href="leads.html">Leads</a>
+        <a href="jobs.html">Jobs</a>
+        <!-- Estimates / Invoices links land here as we build them -->
+      </nav>
+      <div class="app-header-actions">
+        <span class="user-email mono" id="user-email"></span>
+        <button class="btn btn-secondary" id="logout-btn">Log out</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <span class="eyebrow">Dashboard</span>
+    <h1>Welcome back.</h1>
+    <p style="color: var(--ink-muted); margin-top: var(--space-2); max-width: 50ch;">
+      Login is working end to end. Clients, jobs, leads, estimates, invoices, and
+      documents get built here next, one at a time.
+    </p>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script src="assets/supabase-client.js?v=1"></script>
+  <script src="assets/auth-guard.js?v=1"></script>
+  <script>
+    supabaseClient.auth.getSession().then(({ data: { session } }) => {
+      if (session) document.getElementById('user-email').textContent = session.user.email;
+    });
+
+    document.getElementById('logout-btn').addEventListener('click', async () => {
+      await supabaseClient.auth.signOut();
+      window.location.href = 'login.html';
+    });
+  </script>
+
+</body>
+</html>
