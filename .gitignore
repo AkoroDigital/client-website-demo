@@ -1,1 +1,8 @@
 .claude/settings.local.json
+
+# Secrets — real API keys live in Vercel's Environment Variables
+# dashboard only, never in this repo. .env.example (committed) shows
+# what variables are needed, with no real values.
+.env
+.env.local
+.env.*.local
