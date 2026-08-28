@@ -116,6 +116,7 @@ module.exports = async (req, res) => {
         phone,
         details: 'Started a text conversation with the AI assistant.',
         status: 'new',
+        source: 'phone',
       });
       thread = await insertOne('sms_threads', { phone, lead_id: lead.id, messages: [] });
     }
@@ -148,6 +149,7 @@ module.exports = async (req, res) => {
         name: bookingCall.customer_name || 'Unknown caller',
         phone,
         address: bookingCall.address || null,
+        source: 'phone',
       });
 
       await insertOne('jobs', {

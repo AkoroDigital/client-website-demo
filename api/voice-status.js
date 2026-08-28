@@ -54,6 +54,7 @@ module.exports = async (req, res) => {
       phone: callerNumber,
       details: 'Missed call. AI assistant is following up by text.',
       status: 'new',
+      source: 'phone',
     });
 
     await insertOne('sms_threads', {

@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Source+Sans+3:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link href="../assets/styles.css?v=7" rel="stylesheet">
-<link href="assets/app.css?v=5" rel="stylesheet">
+<link href="assets/app.css?v=6" rel="stylesheet">
 </head>
 <body class="app-body">
 
@@ -48,11 +48,55 @@
 
   <main class="app-main">
     <span class="eyebrow">Dashboard</span>
-    <h1>Welcome back.</h1>
-    <p style="color: var(--ink-muted); margin-top: var(--space-2); max-width: 50ch;">
-      Login is working end to end. Clients, jobs, leads, estimates, invoices, and
-      documents get built here next, one at a time.
-    </p>
+    <h1>Where things stand.</h1>
+    <p class="count" id="dash-loading" style="margin-top: var(--space-2);">Loading…</p>
+
+    <div id="dash-content" style="display: none;">
+      <div class="dash-grid">
+        <div class="dash-tile">
+          <span class="dash-tile-value" id="dash-open-leads">0</span>
+          <span class="dash-tile-label">Open leads</span>
+        </div>
+        <div class="dash-tile">
+          <span class="dash-tile-value" id="dash-appointments">0</span>
+          <span class="dash-tile-label">Upcoming appointments</span>
+        </div>
+        <div class="dash-tile">
+          <span class="dash-tile-value" id="dash-in-progress">0</span>
+          <span class="dash-tile-label">Jobs in progress</span>
+        </div>
+        <div class="dash-tile">
+          <span class="dash-tile-value" id="dash-revenue">$0</span>
+          <span class="dash-tile-label">Revenue logged</span>
+        </div>
+      </div>
+
+      <div class="dash-section">
+        <span class="eyebrow">Where it's coming from</span>
+        <h2>Revenue by source</h2>
+        <div id="dash-source-wrap">
+          <p class="count">Loading…</p>
+        </div>
+      </div>
+
+      <div class="dash-section">
+        <span class="eyebrow">Pipeline</span>
+        <h2>Leads, jobs, and estimates by stage</h2>
+
+        <div class="pipeline-group">
+          <span class="pipeline-group-label">Leads</span>
+          <div class="pipeline-grid" id="dash-pipeline-leads"></div>
+        </div>
+        <div class="pipeline-group">
+          <span class="pipeline-group-label">Jobs</span>
+          <div class="pipeline-grid" id="dash-pipeline-jobs"></div>
+        </div>
+        <div class="pipeline-group">
+          <span class="pipeline-group-label">Estimates</span>
+          <div class="pipeline-grid" id="dash-pipeline-estimates"></div>
+        </div>
+      </div>
+    </div>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -60,6 +104,81 @@
   <script src="assets/auth-guard.js?v=1"></script>
   <script src="../assets/site.js?v=2"></script>
   <script>
+    const SOURCE_LABEL = {
+      google_search: 'Google search', google_ads: 'Google ad', instagram: 'Instagram',
+      facebook: 'Facebook', referral: 'Referral', phone: 'Phone', website: 'Website', other: 'Other',
+    };
+
+    function renderPipeline(containerId, items, labelMap) {
+      const counts = {};
+      items.forEach((i) => { counts[i.status] = (counts[i.status] || 0) + 1; });
+      document.getElementById(containerId).innerHTML = Object.keys(labelMap).map((key) => `
+        <div class="pipeline-item">
+          <span class="value">${counts[key] || 0}</span>
+          <span class="label">${labelMap[key]}</span>
+        </div>
+      `).join('');
+    }
+
+    async function loadDashboard() {
+      const today = new Date().toISOString().slice(0, 10);
+
+      const [{ data: leads, error: leadsErr }, { data: jobs, error: jobsErr }, { data: estimates, error: estErr }] = await Promise.all([
+        supabaseClient.from('leads').select('status'),
+        supabaseClient.from('jobs').select('status, scheduled_date, revenue, clients(source)'),
+        supabaseClient.from('estimates').select('status'),
+      ]);
+
+      if (leadsErr || jobsErr || estErr) {
+        document.getElementById('dash-loading').textContent = 'Could not load dashboard data.';
+        return;
+      }
+
+      document.getElementById('dash-loading').style.display = 'none';
+      document.getElementById('dash-content').style.display = 'block';
+
+      const openLeads = leads.filter((l) => l.status === 'new' || l.status === 'contacted').length;
+      const upcomingAppointments = jobs.filter((j) =>
+        j.scheduled_date && j.scheduled_date >= today && j.status !== 'complete' && j.status !== 'cancelled'
+      ).length;
+      const inProgress = jobs.filter((j) => j.status === 'in_progress' || j.status === 'drying').length;
+      const totalRevenue = jobs.reduce((sum, j) => sum + (Number(j.revenue) || 0), 0);
+
+      document.getElementById('dash-open-leads').textContent = openLeads;
+      document.getElementById('dash-appointments').textContent = upcomingAppointments;
+      document.getElementById('dash-in-progress').textContent = inProgress;
+      document.getElementById('dash-revenue').textContent = '$' + totalRevenue.toFixed(2);
+
+      const bySource = {};
+      jobs.forEach((j) => {
+        const key = j.clients?.source || 'unknown';
+        if (!bySource[key]) bySource[key] = { revenue: 0, jobs: 0 };
+        bySource[key].revenue += Number(j.revenue) || 0;
+        bySource[key].jobs += 1;
+      });
+
+      const sourceRows = Object.entries(bySource)
+        .sort((a, b) => b[1].revenue - a[1].revenue)
+        .map(([key, v]) => `
+          <tr>
+            <td data-label="Source">${key === 'unknown' ? 'Unknown' : (SOURCE_LABEL[key] || key)}</td>
+            <td data-label="Jobs" class="muted">${v.jobs}</td>
+            <td data-label="Revenue" class="mono">$${v.revenue.toFixed(2)}</td>
+          </tr>
+        `).join('');
+
+      const sourceWrap = document.getElementById('dash-source-wrap');
+      sourceWrap.innerHTML = sourceRows
+        ? `<table class="data-table"><thead><tr><th>Source</th><th>Jobs</th><th>Revenue</th></tr></thead><tbody>${sourceRows}</tbody></table>`
+        : '<div class="empty-state">No jobs yet — revenue by source will show up here once there are some.</div>';
+
+      renderPipeline('dash-pipeline-leads', leads, { new: 'New', contacted: 'Contacted', booked: 'Booked', lost: 'Lost' });
+      renderPipeline('dash-pipeline-jobs', jobs, { new: 'New', in_progress: 'In progress', drying: 'Drying', complete: 'Complete', cancelled: 'Cancelled' });
+      renderPipeline('dash-pipeline-estimates', estimates, { draft: 'Draft', sent: 'Sent', approved: 'Approved', declined: 'Declined' });
+    }
+
+    loadDashboard();
+
     supabaseClient.auth.getSession().then(({ data: { session } }) => {
       if (session) document.getElementById('user-email').textContent = session.user.email;
     });

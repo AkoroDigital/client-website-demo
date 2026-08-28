@@ -80,6 +80,18 @@
             <label for="details">What happened</label>
             <textarea id="details" name="details" required></textarea>
           </div>
+          <div class="form-field">
+            <label for="source">How did you hear about us? (optional)</label>
+            <select id="source" name="source">
+              <option value="">Prefer not to say</option>
+              <option value="google_search">Google search</option>
+              <option value="google_ads">Google ad</option>
+              <option value="instagram">Instagram</option>
+              <option value="facebook">Facebook</option>
+              <option value="referral">Someone told me</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
           <button type="submit" class="btn btn-primary notch">Request a callback</button>
           <p class="form-error" id="form-error" role="alert">Something went wrong on our end — please call us instead, we're not able to miss this one.</p>
           <div class="form-success" id="form-success">Thanks — that's in. We'll call you back shortly.</div>
@@ -151,6 +163,7 @@
         name: document.getElementById('name').value.trim(),
         phone: document.getElementById('phone').value.trim() || null,
         details: address ? `Address: ${address}\n\n${details}` : details,
+        source: document.getElementById('source').value || null,
       };
 
       const { error } = await supabaseClient.from('leads').insert(payload);

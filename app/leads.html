@@ -92,6 +92,20 @@
             <option value="lost">Lost</option>
           </select>
         </div>
+        <div class="form-field">
+          <label for="lead-source">Source</label>
+          <select id="lead-source">
+            <option value="">Unknown</option>
+            <option value="google_search">Google search</option>
+            <option value="google_ads">Google ad</option>
+            <option value="instagram">Instagram</option>
+            <option value="facebook">Facebook</option>
+            <option value="referral">Referral</option>
+            <option value="phone">Phone</option>
+            <option value="website">Website</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
         <p class="modal-error" id="lead-form-error" role="alert"></p>
         <div class="modal-actions">
           <button type="submit" class="btn btn-primary">Save lead</button>
@@ -120,6 +134,10 @@
     }
 
     const STATUS_LABEL = { new: 'New', contacted: 'Contacted', booked: 'Booked', lost: 'Lost' };
+    const SOURCE_LABEL = {
+      google_search: 'Google search', google_ads: 'Google ad', instagram: 'Instagram',
+      facebook: 'Facebook', referral: 'Referral', phone: 'Phone', website: 'Website', other: 'Other',
+    };
 
     function openModal(lead) {
       formError.textContent = '';
@@ -132,10 +150,12 @@
         document.getElementById('lead-email').value = lead.email || '';
         document.getElementById('lead-details').value = lead.details || '';
         document.getElementById('lead-status').value = lead.status || 'new';
+        document.getElementById('lead-source').value = lead.source || '';
       } else {
         modalTitle.textContent = 'Add lead';
         document.getElementById('lead-id').value = '';
         document.getElementById('lead-status').value = 'new';
+        document.getElementById('lead-source').value = '';
       }
       overlay.classList.add('open');
       document.getElementById('lead-name').focus();
@@ -170,6 +190,7 @@
           <td data-label="Name">${escapeHtml(l.name)}</td>
           <td data-label="Phone" class="muted">${escapeHtml(l.phone) || '—'}</td>
           <td data-label="Status"><span class="status-badge status-${l.status}">${STATUS_LABEL[l.status] || l.status}</span></td>
+          <td data-label="Source" class="muted">${l.source ? SOURCE_LABEL[l.source] || l.source : '—'}</td>
           <td data-label="Received" class="muted">${new Date(l.created_at).toLocaleDateString()}</td>
           <td data-label="Actions">
             <div class="row-actions">
@@ -186,7 +207,7 @@
       listWrap.innerHTML = `
         <table class="data-table">
           <thead>
-            <tr><th>Name</th><th>Phone</th><th>Status</th><th>Received</th><th>Actions</th></tr>
+            <tr><th>Name</th><th>Phone</th><th>Status</th><th>Source</th><th>Received</th><th>Actions</th></tr>
           </thead>
           <tbody>${rows}</tbody>
         </table>
@@ -208,7 +229,7 @@
 
       const { data: newClient, error: clientError } = await supabaseClient
         .from('clients')
-        .insert({ name: lead.name, phone: lead.phone, email: lead.email, notes: lead.details })
+        .insert({ name: lead.name, phone: lead.phone, email: lead.email, notes: lead.details, source: lead.source })
         .select()
         .single();
 
@@ -250,6 +271,7 @@
         email: document.getElementById('lead-email').value.trim() || null,
         details: document.getElementById('lead-details').value.trim() || null,
         status: document.getElementById('lead-status').value,
+        source: document.getElementById('lead-source').value || null,
       };
 
       if (!payload.name) {

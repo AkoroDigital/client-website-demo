@@ -103,6 +103,21 @@
           <label for="job-notes">Notes</label>
           <textarea id="job-notes"></textarea>
         </div>
+        <div class="form-field">
+          <label for="job-revenue">Revenue ($)</label>
+          <input type="number" id="job-revenue" min="0" step="0.01" placeholder="Leave blank until the job is won">
+        </div>
+        <div class="form-field">
+          <label for="job-review-requested">Review requested</label>
+          <select id="job-review-requested">
+            <option value="false">Not yet</option>
+            <option value="true">Yes</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="job-review-notes">Review notes / link</label>
+          <input type="text" id="job-review-notes" placeholder="e.g. link to their review, or a quote">
+        </div>
         <p class="modal-error" id="job-form-error" role="alert"></p>
         <div class="modal-actions">
           <button type="submit" class="btn btn-primary">Save job</button>
@@ -204,10 +219,14 @@
         document.getElementById('job-address').value = job.address || '';
         document.getElementById('job-date').value = job.scheduled_date || '';
         document.getElementById('job-notes').value = job.notes || '';
+        document.getElementById('job-revenue').value = job.revenue ?? '';
+        document.getElementById('job-review-requested').value = String(!!job.review_requested);
+        document.getElementById('job-review-notes').value = job.review_notes || '';
       } else {
         modalTitle.textContent = 'Add job';
         document.getElementById('job-id').value = '';
         document.getElementById('job-status').value = 'new';
+        document.getElementById('job-review-requested').value = 'false';
       }
       overlay.classList.add('open');
     }
@@ -244,6 +263,7 @@
           <td data-label="Status"><span class="status-badge status-${j.status}">${STATUS_LABEL[j.status] || j.status}</span></td>
           <td data-label="Scheduled" class="muted">${j.scheduled_date ? new Date(j.scheduled_date + 'T00:00:00').toLocaleDateString() : '—'}</td>
           <td data-label="Assigned to" class="muted">${escapeHtml(j.profiles?.full_name) || 'Unassigned'}</td>
+          <td data-label="Revenue" class="mono">${j.revenue != null ? '$' + Number(j.revenue).toFixed(2) : '—'}</td>
           <td data-label="Actions">
             <div class="row-actions">
               <button type="button" data-edit="${j.id}">Edit</button>
@@ -257,7 +277,7 @@
       listWrap.innerHTML = `
         <table class="data-table">
           <thead>
-            <tr><th>Client</th><th>Service</th><th>Status</th><th>Scheduled</th><th>Assigned to</th><th>Actions</th></tr>
+            <tr><th>Client</th><th>Service</th><th>Status</th><th>Scheduled</th><th>Assigned to</th><th>Revenue</th><th>Actions</th></tr>
           </thead>
           <tbody>${rows}</tbody>
         </table>
@@ -407,6 +427,9 @@
         assigned_to: assignedSelect.value || null,
         scheduled_date: document.getElementById('job-date').value || null,
         notes: document.getElementById('job-notes').value.trim() || null,
+        revenue: document.getElementById('job-revenue').value === '' ? null : parseFloat(document.getElementById('job-revenue').value),
+        review_requested: document.getElementById('job-review-requested').value === 'true',
+        review_notes: document.getElementById('job-review-notes').value.trim() || null,
       };
 
       if (!payload.client_id) {
