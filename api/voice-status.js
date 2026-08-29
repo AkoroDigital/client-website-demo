@@ -40,7 +40,7 @@ module.exports = async (req, res) => {
   return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?>
 <Response>
   <Gather input="speech" action="${gatherUrl}" method="POST" speechTimeout="auto" timeout="8">
-    <Say>Sorry we missed you. After the tone, please say your name, the address, and what's going on. Someone will call you back as soon as possible.</Say>
+    <Say>Sorry we missed you. Please say your name, the address, and what's going on, and someone will call you back as soon as possible.</Say>
   </Gather>
   <Say>Sorry, I didn't catch that. Please call back when you can, or we'll follow up soon.</Say>
   <Hangup/>
