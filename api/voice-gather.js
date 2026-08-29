@@ -1,11 +1,12 @@
 // Twilio calls this once the caller finishes speaking (see the
 // <Gather> in api/voice-status.js). Creates a Lead from what they
-// said and confirms out loud that it was received. The owner gets
-// notified separately by the existing Supabase webhook -> email flow
-// (api/notify-lead.js), the same one every other lead already uses.
+// said, emails the owner directly (Supabase's Database Webhooks
+// aren't available on this project, so we don't rely on that), and
+// confirms out loud that it was received.
 
 const { validateTwilioSignature, requestUrl } = require('../lib/twilio-verify');
 const { insertOne } = require('../lib/supabase-admin');
+const { sendEmail } = require('../lib/send-email');
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
@@ -39,6 +40,14 @@ module.exports = async (req, res) => {
       status: 'new',
       source: 'phone',
     });
+
+    if (process.env.OWNER_EMAIL) {
+      await sendEmail({
+        to: process.env.OWNER_EMAIL,
+        subject: 'New lead: missed call (phone)',
+        text: `Phone: ${callerNumber}\nSource: phone\n\nVoicemail transcript: "${SpeechResult}"\n\nOpen the CRM to follow up.`,
+      });
+    }
   } catch (err) {
     console.error('voice-gather error', err);
   }

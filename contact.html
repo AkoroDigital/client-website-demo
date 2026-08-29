@@ -159,7 +159,15 @@
       const address = document.getElementById('address').value.trim();
       const details = document.getElementById('details').value.trim();
 
+      // Generate the ID ourselves rather than reading it back after
+      // insert — the public form's database permission only allows
+      // creating a lead, not reading any back (on purpose, so a
+      // stranger can't browse other people's submissions), so
+      // .select() here would silently come back empty.
+      const newLeadId = crypto.randomUUID();
+
       const payload = {
+        id: newLeadId,
         name: document.getElementById('name').value.trim(),
         phone: document.getElementById('phone').value.trim() || null,
         details: address ? `Address: ${address}\n\n${details}` : details,
@@ -178,6 +186,17 @@
 
       successEl.classList.add('show');
       form.reset();
+
+      // Notify the owner directly — Supabase's Database Webhooks aren't
+      // available on this project, so the site triggers the email
+      // itself instead of relying on a database trigger to do it. Not
+      // blocking on this: the lead already saved, so a slow/failed
+      // notification shouldn't hold up the visitor's confirmation.
+      fetch('/api/lead-created', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ leadId: newLeadId }),
+      }).catch((err) => console.error('notify failed', err));
     });
   </script>
 

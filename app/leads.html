@@ -281,12 +281,23 @@
 
       const query = id
         ? supabaseClient.from('leads').update(payload).eq('id', id)
-        : supabaseClient.from('leads').insert(payload);
+        : supabaseClient.from('leads').insert(payload).select().single();
 
-      const { error } = await query;
+      const { data: savedLead, error } = await query;
       if (error) {
         formError.textContent = error.message;
         return;
+      }
+
+      // Only notify on brand-new leads, not edits to existing ones —
+      // Supabase's Database Webhooks aren't available on this project,
+      // so this triggers the email directly instead.
+      if (!id && savedLead) {
+        fetch('/api/lead-created', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ leadId: savedLead.id }),
+        }).catch((err) => console.error('notify failed', err));
       }
 
       closeModal();
