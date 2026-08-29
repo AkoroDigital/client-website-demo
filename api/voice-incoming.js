@@ -1,6 +1,12 @@
 // Twilio Voice webhook — set as the "A call comes in" URL on your
 // Twilio number. Rings the owner's cell; if it goes unanswered,
 // Twilio calls /api/voice-status next, which starts the text-back.
+//
+// The 12s timeout is intentionally shorter than a typical ring cycle:
+// if it's too long, the owner's own carrier voicemail can pick up the
+// call first (since it "answers", Twilio treats that as a completed
+// call, not a missed one, and our fallback never runs). Keeping this
+// short means we win the race and take over before that happens.
 
 const { validateTwilioSignature, requestUrl } = require('../lib/twilio-verify');
 
@@ -22,7 +28,7 @@ module.exports = async (req, res) => {
   res.setHeader('Content-Type', 'text/xml');
   return res.status(200).send(`<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-  <Dial timeout="20" action="${statusUrl}" method="POST">
+  <Dial timeout="12" action="${statusUrl}" method="POST">
     <Number>${ownerNumber}</Number>
   </Dial>
 </Response>`);
