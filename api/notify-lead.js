@@ -39,12 +39,13 @@ module.exports = async (req, res) => {
   const phone = record.phone || 'no phone given';
   const source = record.source || 'unknown';
   const details = record.details || '';
+  const crmUrl = `https://${req.headers['x-forwarded-host'] || req.headers.host}/app/leads.html`;
 
   try {
     await sendEmail({
       to: process.env.OWNER_EMAIL,
       subject: `New lead: ${name} (${source})`,
-      text: `Name: ${name}\nPhone: ${phone}\nSource: ${source}\n\n${details}\n\nOpen the CRM to follow up.`,
+      text: `Name: ${name}\nPhone: ${phone}\nSource: ${source}\n\n${details}\n\nOpen the CRM to follow up: ${crmUrl}`,
     });
     return res.status(200).json({ sent: true });
   } catch (err) {

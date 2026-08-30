@@ -50,10 +50,12 @@ module.exports = async (req, res) => {
       return res.status(404).json({ error: 'Lead not found' });
     }
 
+    const crmUrl = `https://${req.headers['x-forwarded-host'] || req.headers.host}/app/leads.html`;
+
     await sendEmail({
       to: process.env.OWNER_EMAIL,
       subject: `New lead: ${lead.name || 'Someone'} (${lead.source || 'unknown'})`,
-      text: `Name: ${lead.name || 'Someone'}\nPhone: ${lead.phone || 'no phone given'}\nSource: ${lead.source || 'unknown'}\n\n${lead.details || ''}\n\nOpen the CRM to follow up.`,
+      text: `Name: ${lead.name || 'Someone'}\nPhone: ${lead.phone || 'no phone given'}\nSource: ${lead.source || 'unknown'}\n\n${lead.details || ''}\n\nOpen the CRM to follow up: ${crmUrl}`,
     });
 
     return res.status(200).json({ sent: true });

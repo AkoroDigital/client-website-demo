@@ -42,10 +42,11 @@ module.exports = async (req, res) => {
     });
 
     if (process.env.OWNER_EMAIL) {
+      const crmUrl = `https://${req.headers['x-forwarded-host'] || req.headers.host}/app/leads.html`;
       await sendEmail({
         to: process.env.OWNER_EMAIL,
         subject: 'New lead: missed call (phone)',
-        text: `Phone: ${callerNumber}\nSource: phone\n\nVoicemail transcript: "${SpeechResult}"\n\nOpen the CRM to follow up.`,
+        text: `Phone: ${callerNumber}\nSource: phone\n\nVoicemail transcript: "${SpeechResult}"\n\nOpen the CRM to follow up: ${crmUrl}`,
       });
     }
   } catch (err) {
