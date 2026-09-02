@@ -137,8 +137,8 @@ body.app-body.no-guard { visibility: visible; }
 }
 .status-new, .status-draft { color: var(--ink-muted); }
 .status-contacted, .status-sent, .status-in_progress { color: var(--accent); }
-.status-booked, .status-drying { color: oklch(75% 0.14 200); }
-.status-complete, .status-approved, .status-paid { color: oklch(75% 0.16 140); }
+.status-drying { color: oklch(75% 0.14 200); }
+.status-won, .status-complete, .status-approved, .status-paid { color: oklch(75% 0.16 140); }
 .status-lost, .status-declined, .status-cancelled, .status-overdue, .status-void { color: oklch(68% 0.16 25); }
 
 .empty-state {
